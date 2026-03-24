@@ -1,0 +1,61 @@
+{
+  "profileName": "FPS - Balanced (v2)",
+  "version": "2.0",
+  "description": "Perfil balanceado para FPS com sistema refatorado de mouse-to-analog",
+
+  "mouse": {
+    "comment": "Configuração do processador de mouse → analógico",
+
+    "sensitivityX": 2.8,
+    "sensitivityY": 2.8,
+    "exponent": 1.1,
+    "minCurveThreshold": 0.1,
+
+    "maxSpeed": 1.0,
+    "acceleration": 10.0,
+    "deceleration": 15.0,
+
+    "deadzone": 0.015,
+    "jitterThreshold": 0.3,
+
+    "smoothSamples": 3,
+    "smoothFactor": 0.25,
+
+    "decayDelay": 120.0,
+    "decayRate": 5.5,
+
+    "normalizeVector": true,
+    "independentAxes": false,
+
+    "target": "rightStick"
+  },
+
+  "keyBindings": {
+    "87":  { "target": "leftStickY", "axisValue": 1.0,  "label": "W → LS Up" },
+    "83":  { "target": "leftStickY", "axisValue": -1.0, "label": "S → LS Down" },
+    "65":  { "target": "leftStickX", "axisValue": -1.0, "label": "A → LS Left" },
+    "68":  { "target": "leftStickX", "axisValue": 1.0,  "label": "D → LS Right" },
+
+    "32":  { "target": "button", "mask": 4096,  "label": "Space → A (Jump)" },
+    "17":  { "target": "button", "mask": 8192,  "label": "Ctrl → B (Crouch)" },
+    "16":  { "target": "button", "mask": 16384, "label": "Shift → X (Sprint)" },
+
+    "70":  { "target": "button", "mask": 32768, "label": "F → Y (Use)" },
+    "82":  { "target": "rightTrigger", "axisValue": 1.0, "label": "R → RT (Reload)" },
+    "71":  { "target": "leftTrigger",  "axisValue": 1.0, "label": "G → LT (Grenade)" },
+
+    "81":  { "target": "button", "mask": 256,   "label": "Q → LB (Ability 1)" },
+    "69":  { "target": "button", "mask": 512,   "label": "E → RB (Ability 2)" },
+
+    "9":   { "target": "button", "mask": 16,    "label": "Tab → Back" },
+    "27":  { "target": "button", "mask": 32,    "label": "Esc → Start" }
+  },
+
+  "mouseBindings": {
+    "0": { "target": "rightTrigger", "axisValue": 1.0, "label": "LMB → RT (Fire)" },
+    "1": { "target": "leftTrigger",  "axisValue": 1.0, "label": "RMB → LT (Aim)" },
+    "2": { "target": "button", "mask": 128, "label": "MMB → RS Click (Melee)" },
+    "3": { "target": "button", "mask": 64,  "label": "Mouse X1 → LS Click" },
+    "4": { "target": "button", "mask": 32768, "label": "Mouse X2 → Y (Use)" }
+  }
+}

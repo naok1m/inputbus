@@ -1,0 +1,3 @@
+C:/InputBus/build/core/CMakeFiles/rewsd_core.dir
+C:/InputBus/build/core/CMakeFiles/ALL_BUILD.dir
+C:/InputBus/build/core/CMakeFiles/ZERO_CHECK.dir

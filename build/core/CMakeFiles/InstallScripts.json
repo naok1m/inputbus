@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/InputBus/build/core/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

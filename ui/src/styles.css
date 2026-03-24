@@ -1,0 +1,157 @@
+:root {
+  color-scheme: light;
+  --bg: radial-gradient(circle at 20% -10%, #f5b27f 0, #efe7d8 32%, #d8dee8 100%);
+  --card: rgba(255, 255, 255, 0.78);
+  --line: #b8b6af;
+  --ink: #222126;
+  --accent: #d1462f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  width: min(1100px, 96vw);
+  margin: 0 auto;
+  padding: 20px 0 28px;
+}
+
+.hero {
+  margin-bottom: 14px;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.9), rgba(248, 244, 235, 0.85));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.hero p {
+  margin: 6px 0 0;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(4px);
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.profile-form,
+.profile-load-row {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-form {
+  margin-bottom: 8px;
+}
+
+input,
+select,
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: #fff;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+.sensitivity-editor .slider-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 60px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.binding-row {
+  display: grid;
+  grid-template-columns: 80px 24px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.binding-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.key-slot.listening {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.gamepad-preview svg {
+  width: 100%;
+  height: auto;
+}
+
+.pad-shell {
+  fill: #2e3239;
+  stroke: #15171a;
+  stroke-width: 1;
+}
+
+.stick-base {
+  fill: #111;
+}
+
+.stick-dot {
+  fill: #8fa1b8;
+}
+
+.btn {
+  fill: #7f8084;
+}
+
+.btn-active {
+  fill: #ff8647;
+}
+
+.trigger {
+  fill: #ffd67b;
+}
+
+@media (max-width: 900px) {
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+}

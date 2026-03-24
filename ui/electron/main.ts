@@ -1,0 +1,109 @@
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { CoreBridge } from './ipc-bridge';
+import * as path from 'path';
+import { spawn, ChildProcess } from 'child_process';
+import * as fs from 'fs';
+
+let bridge: CoreBridge;
+let coreProcess: ChildProcess | null = null;
+
+function resolveCorePath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'core', 'rewsd_core.exe');
+  }
+
+  return path.resolve(__dirname, '../../build/core/Release/rewsd_core.exe');
+}
+
+function startCore() {
+  if (coreProcess && !coreProcess.killed) return;
+
+  const corePath = resolveCorePath();
+  if (!fs.existsSync(corePath)) {
+    // Keep UI alive even if core executable is missing.
+    return;
+  }
+
+  coreProcess = spawn(corePath, [], {
+    cwd: path.dirname(corePath),
+    windowsHide: true,
+    stdio: 'ignore'
+  });
+
+  coreProcess.on('exit', () => {
+    coreProcess = null;
+  });
+}
+
+function stopCore() {
+  if (!coreProcess || coreProcess.killed) return;
+  coreProcess.kill();
+  coreProcess = null;
+}
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1200, height: 800,
+    frame: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+    }
+  });
+
+  if (process.env.VITE_DEV_URL) {
+    win.loadURL(process.env.VITE_DEV_URL);
+  } else {
+    win.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
+
+  win.webContents.on('did-fail-load', (_event, code, desc) => {
+    win.loadURL(`data:text/html,<h2>InputBus UI load failed</h2><p>code=${code}</p><p>${encodeURIComponent(desc)}</p>`);
+  });
+
+  bridge = new CoreBridge();
+  bridge.connect();
+
+  bridge.on('connected', () => {
+    win.webContents.send('core-message', {
+      type: 100,
+      payload: { connected: true }
+    });
+  });
+
+  bridge.on('error', (err: Error) => {
+    // Core may be offline during UI startup; keep renderer alive and retry in bridge.
+    win.webContents.send('core-message', {
+      type: 200,
+      payload: { connected: false, error: err.message }
+    });
+  });
+
+  bridge.on('message', ({ type, payload }) => {
+    win.webContents.send('core-message', { type, payload });
+  });
+
+  // Relay UI requests to core
+  ipcMain.handle('core-send', async (_, type: number, payload: object) => {
+    bridge.send(type, payload);
+    return { ok: true };
+  });
+}
+
+app.whenReady().then(() => {
+  startCore();
+  createWindow();
+});
+
+app.on('window-all-closed', () => {
+  stopCore();
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  stopCore();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});

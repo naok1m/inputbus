@@ -1,0 +1,7 @@
+C:\InputBus\core\src\main.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\main.obj
+C:\InputBus\core\src\input\inputCapture.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\inputCapture.obj
+C:\InputBus\core\src\input\RawInputHandler.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\RawInputHandler.obj
+C:\InputBus\core\src\ipc\PipeServer.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\PipeServer.obj
+C:\InputBus\core\src\vigem\MappingEngine.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\MappingEngine.obj
+C:\InputBus\core\src\vigem\MouseAnalogProcessor.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\MouseAnalogProcessor.obj
+C:\InputBus\core\src\vigem\ViGEmManager.cpp;C:\InputBus\build\core\rewsd_core.dir\Release\ViGEmManager.obj
