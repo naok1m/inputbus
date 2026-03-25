@@ -114,6 +114,16 @@ int main() {
                         if (j.contains("jitterThreshold")) cfg.jitterThreshold = j["jitterThreshold"];
                         if (j.contains("decayDelay"))      cfg.decayDelay      = j["decayDelay"];
                         if (j.contains("decayRate"))       cfg.decayRate       = j["decayRate"];
+                        if (j.contains("decayMinStick"))   cfg.decayMinStick   = j["decayMinStick"];
+
+                        if (j.contains("accelCurve") && j["accelCurve"].is_array()) {
+                            const auto& arr = j["accelCurve"];
+                            cfg.accelPointCount = std::min(static_cast<int>(arr.size()), MAX_ACCEL_POINTS);
+                            for (int i = 0; i < cfg.accelPointCount; ++i) {
+                                cfg.accelCurve[i].speed     = arr[i].value("speed", 0.0f);
+                                cfg.accelCurve[i].multiplier = arr[i].value("mult",  1.0f);
+                            }
+                        }
 
                         g_mouseProc.UpdateConfig(cfg);
                         return R"({"ok":true})";
@@ -132,6 +142,8 @@ int main() {
                     j["debug"]["stickX"]    = dbg.stickX;
                     j["debug"]["stickY"]    = dbg.stickY;
                     j["debug"]["magnitude"] = dbg.magnitude;
+                    j["debug"]["mouseSpeed"] = dbg.mouseSpeed;
+                    j["debug"]["accelMult"] = dbg.accelMultiplier;
                     j["debug"]["idleMs"]    = dbg.timeSinceLastInput;
                     j["debug"]["decaying"]  = dbg.isDecaying;
                     return j.dump();

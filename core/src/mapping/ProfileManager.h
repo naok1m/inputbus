@@ -29,7 +29,6 @@ public:
             if (j.contains("mouse")) {
                 const auto& m = j["mouse"];
 
-                // "sensitivity" is a legacy shorthand for setting both axes equally
                 if (m.contains("sensitivity")) {
                     float s = m["sensitivity"].get<float>();
                     cfg.sensitivityX = cfg.sensitivityY = s;
@@ -43,7 +42,19 @@ public:
                 if (m.contains("jitterThreshold")) cfg.jitterThreshold = m["jitterThreshold"].get<float>();
                 if (m.contains("decayDelay"))      cfg.decayDelay      = m["decayDelay"].get<float>();
                 if (m.contains("decayRate"))       cfg.decayRate       = m["decayRate"].get<float>();
+                if (m.contains("decayMinStick"))   cfg.decayMinStick   = m["decayMinStick"].get<float>();
                 if (m.contains("normalizeVector")) cfg.normalizeVector = m["normalizeVector"].get<bool>();
+
+                // Acceleration curve: array of {speed, multiplier} points
+                if (m.contains("accelCurve") && m["accelCurve"].is_array()) {
+                    const auto& arr = m["accelCurve"];
+                    cfg.accelPointCount = std::min(static_cast<int>(arr.size()), MAX_ACCEL_POINTS);
+                    for (int i = 0; i < cfg.accelPointCount; ++i) {
+                        const auto& pt = arr[i];
+                        cfg.accelCurve[i].speed      = pt.value("speed", 0.0f);
+                        cfg.accelCurve[i].multiplier  = pt.value("mult",  1.0f);
+                    }
+                }
             }
             mouseProc.UpdateConfig(cfg);
 

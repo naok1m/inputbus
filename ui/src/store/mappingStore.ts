@@ -3,6 +3,11 @@ import { persist } from 'zustand/middleware';
 
 export interface Binding { target: string; mask?: number; axisValue?: number; }
 
+export interface AccelPoint {
+  speed: number;  // Mouse speed in px/tick
+  mult:  number;  // Sensitivity multiplier at this speed
+}
+
 export interface MouseConfig {
   // Sensitivity: scale factor per pixel of mouse movement
   sensitivityX:    number;
@@ -10,6 +15,8 @@ export interface MouseConfig {
   // Response curve
   exponent:        number;
   maxSpeed:        number;
+  // Acceleration curve (input-side, speed-dependent sensitivity)
+  accelCurve:      AccelPoint[];
   // Deadzone
   deadzone:        number;
   // Smoothing (EMA: 1 = none, 10 = heavy)
@@ -18,7 +25,8 @@ export interface MouseConfig {
   jitterThreshold: number;
   // Decay: how long stick holds position after mouse stops
   decayDelay:      number;  // ms before decay starts
-  decayRate:       number;  // exponential decay rate
+  decayRate:       number;  // exponential decay rate (0 = never returns)
+  decayMinStick:   number;  // floor magnitude: decay stops below this
 }
 
 const DEFAULT_CONFIG: MouseConfig = {
@@ -26,23 +34,34 @@ const DEFAULT_CONFIG: MouseConfig = {
   sensitivityY:    1.0,
   exponent:        1.0,
   maxSpeed:        1.0,
+  accelCurve:      [],
   deadzone:        0.05,
   smoothSamples:   2,
   jitterThreshold: 1.5,
   decayDelay:      100,
   decayRate:       6,
+  decayMinStick:   0,
 };
 
-const FPS_CONFIG: MouseConfig = {
-  sensitivityX:    1.5,
-  sensitivityY:    1.5,
-  exponent:        1.1,
+const WARZONE_CONFIG: MouseConfig = {
+  sensitivityX:    3.5,
+  sensitivityY:    3.5,
+  exponent:        1.3,
   maxSpeed:        1.0,
-  deadzone:        0.04,
-  smoothSamples:   1,
-  jitterThreshold: 1.5,
-  decayDelay:      80,
-  decayRate:       8,
+  accelCurve: [
+    { speed: 0,  mult: 0.12 },
+    { speed: 3,  mult: 0.20 },
+    { speed: 8,  mult: 0.38 },
+    { speed: 20, mult: 0.65 },
+    { speed: 40, mult: 0.85 },
+    { speed: 70, mult: 1.00 },
+  ],
+  deadzone:        0.0,
+  smoothSamples:   3,
+  jitterThreshold: 0.5,
+  decayDelay:      0,
+  decayRate:       0,
+  decayMinStick:   0,
 };
 
 const MsgType = {
@@ -166,7 +185,7 @@ export const useBindingStore = create<MappingStore>()(
 
       resetFpsDefaults: () => {
         set({
-          activeProfile: 'fps-default',
+          activeProfile: 'warzone',
           bindings: {
             87: { target: 'leftStickY', axisValue:  1.0 },
             83: { target: 'leftStickY', axisValue: -1.0 },
@@ -180,7 +199,7 @@ export const useBindingStore = create<MappingStore>()(
             3: { target: 'button', mask: 512 },
             4: { target: 'button', mask: 256 },
           },
-          mouseConfig: FPS_CONFIG,
+          mouseConfig: WARZONE_CONFIG,
         });
         get().syncToCore();
       },
@@ -205,10 +224,11 @@ export const useBindingStore = create<MappingStore>()(
         const resolvedMouseBindings = data.mouseBindings ?? {};
         const rawMouse             = data.mouse          ?? data.mouseConfig   ?? {};
 
-        // Migrate legacy "sensitivity" field to sensitivityX/Y
+        // Migrate legacy fields
         const resolvedMouse: MouseConfig = {
           ...DEFAULT_CONFIG,
           ...rawMouse,
+          accelCurve: Array.isArray(rawMouse.accelCurve) ? rawMouse.accelCurve : DEFAULT_CONFIG.accelCurve,
           ...(rawMouse.sensitivity != null && rawMouse.sensitivityX == null
             ? { sensitivityX: rawMouse.sensitivity, sensitivityY: rawMouse.sensitivity }
             : {}),

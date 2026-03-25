@@ -372,6 +372,37 @@ select option { background: var(--surface2); }
   gap: 16px;
 }
 
+/* ── Small buttons (accel curve editor) ────────────────────── */
+.btn-small {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-small:hover { border-color: var(--accent); color: var(--accent); }
+.btn-small.btn-danger { color: var(--red); border-color: transparent; }
+.btn-small.btn-danger:hover { border-color: var(--red); background: rgba(239,68,68,0.1); }
+
+/* ── Number inputs inside accel editor ────────────────────── */
+.slider-section input[type=number] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.slider-section input[type=number]:focus { border-color: var(--accent); }
+
 /* ── Scrollbar global ──────────────────────────────────────── */
 * {
   scrollbar-width: thin;
