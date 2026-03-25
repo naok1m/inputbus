@@ -47,9 +47,16 @@ body {
   letter-spacing: 0.5px;
 }
 
-.titlebar-close {
+.titlebar-controls {
   -webkit-app-region: no-drag;
   margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.titlebar-btn,
+.titlebar-close {
+  -webkit-app-region: no-drag;
   width: 28px;
   height: 28px;
   border-radius: 6px;
@@ -63,6 +70,7 @@ body {
   font-size: 16px;
   transition: background 0.15s, color 0.15s;
 }
+.titlebar-btn:hover { background: var(--surface); color: #fff; }
 .titlebar-close:hover { background: var(--red); color: #fff; }
 
 /* ── Shell ─────────────────────────────────────────────────── */
@@ -195,17 +203,37 @@ body {
 .btn-danger:hover { background: rgba(239,68,68,0.1); }
 
 /* ── Gamepad preview ───────────────────────────────────────── */
-.gamepad-preview svg { width: 100%; height: auto; }
-.pad-shell  { fill: #2c2f3a; stroke: #1a1c24; stroke-width: 1.5; }
-.stick-base { fill: #141619; }
-.stick-dot  { fill: var(--accent); }
-.btn-pad    { fill: #3a3d4a; }
-.btn-active { fill: var(--accent); }
-.trigger    { fill: #3a3d4a; }
-.trigger-active { fill: var(--accent); }
+.gamepad-card { padding: 16px 16px 12px; }
+.gamepad-preview { display: flex; justify-content: center; }
+.gamepad-preview svg { width: 100%; max-width: 480px; height: auto; }
 
-.delta-row { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--muted); }
-.delta-val { color: var(--text); font-family: monospace; }
+.gamepad-telemetry {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: 8px;
+  gap: 8px;
+}
+.telemetry-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.telemetry-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.telemetry-val {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  min-width: 36px;
+  text-align: right;
+}
 
 /* ── Sliders ───────────────────────────────────────────────── */
 .slider-section { margin-bottom: 12px; }

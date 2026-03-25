@@ -123,7 +123,8 @@ function createWindow() {
         bridge.send(type, payload);
         return { ok: true };
     });
-    // Frameless window close button
+    // Frameless window controls
+    electron_1.ipcMain.on('minimize-window', () => win.minimize());
     electron_1.ipcMain.on('close-window', () => win.close());
 }
 electron_1.app.whenReady().then(() => {

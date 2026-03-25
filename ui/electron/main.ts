@@ -106,7 +106,8 @@ function createWindow() {
     return { ok: true };
   });
 
-  // Frameless window close button
+  // Frameless window controls
+  ipcMain.on('minimize-window', () => win.minimize());
   ipcMain.on('close-window', () => win.close());
 }
 

@@ -205,6 +205,9 @@ int main() {
                 }
 
                 // Send telemetry to UI at ~250 Hz (every 4 ticks)
+                // Built inside mutex, sent OUTSIDE to prevent deadlock
+                // (SendToAll can block if pipe buffer is full)
+                std::string telemetryPayload;
                 if (++tick % 4 == 0) {
                     std::lock_guard lock(g_stateMutex);
                     using json = nlohmann::json;
@@ -218,7 +221,10 @@ int main() {
                     gp["thumbRY"]      = g_gamepadState.thumbRY;
                     gp["mouseDeltaX"]  = g_teleDeltaX.exchange(0);
                     gp["mouseDeltaY"]  = g_teleDeltaY.exchange(0);
-                    ipc.SendToAll(MsgType::GamepadState, gp.dump());
+                    telemetryPayload = gp.dump();
+                }
+                if (!telemetryPayload.empty()) {
+                    ipc.SendToAll(MsgType::GamepadState, telemetryPayload);
                 }
 
                 std::this_thread::sleep_until(lastTime + targetInterval);

@@ -56,11 +56,18 @@ export default function App() {
     <>
       <div className="titlebar">
         <span className="titlebar-logo">InputBus</span>
-        <button
-          className="titlebar-close"
-          onClick={() => window.electronAPI?.closeWindow?.()}
-          title="Close"
-        >✕</button>
+        <div className="titlebar-controls">
+          <button
+            className="titlebar-btn"
+            onClick={() => window.electronAPI?.minimizeWindow?.()}
+            title="Minimize"
+          >─</button>
+          <button
+            className="titlebar-close"
+            onClick={() => window.electronAPI?.closeWindow?.()}
+            title="Close"
+          >✕</button>
+        </div>
       </div>
 
       <div className="app-shell">

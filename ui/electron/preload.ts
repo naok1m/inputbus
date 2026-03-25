@@ -14,5 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 		ipcRenderer.on('core-message', listener);
 		return () => ipcRenderer.removeListener('core-message', listener);
 	},
+	minimizeWindow: () => ipcRenderer.send('minimize-window'),
 	closeWindow: () => ipcRenderer.send('close-window'),
 });
