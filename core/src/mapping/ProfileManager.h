@@ -38,7 +38,13 @@ public:
                 if (m.contains("exponent"))        cfg.exponent        = m["exponent"].get<float>();
                 if (m.contains("maxSpeed"))        cfg.maxSpeed        = m["maxSpeed"].get<float>();
                 if (m.contains("deadzone"))        cfg.deadzone        = m["deadzone"].get<float>();
-                if (m.contains("smoothSamples"))   cfg.smoothSamples   = m["smoothSamples"].get<int>();
+                if (m.contains("smoothingFactor")) cfg.smoothingFactor = m["smoothingFactor"].get<float>();
+                if (m.contains("maxStepPerFrame")) cfg.maxStepPerFrame = m["maxStepPerFrame"].get<float>();
+                // Legacy compat
+                if (m.contains("smoothSamples") && !m.contains("smoothingFactor")) {
+                    int samples = m["smoothSamples"].get<int>();
+                    cfg.smoothingFactor = (samples <= 1) ? 0.0f : static_cast<float>(samples) * 0.001f;
+                }
                 if (m.contains("jitterThreshold")) cfg.jitterThreshold = m["jitterThreshold"].get<float>();
                 if (m.contains("decayDelay"))      cfg.decayDelay      = m["decayDelay"].get<float>();
                 if (m.contains("decayRate"))       cfg.decayRate       = m["decayRate"].get<float>();

@@ -27,16 +27,17 @@ export default function App() {
 
     const off = window.electronAPI.onCoreMessage((msg) => {
       if (msg.type === 100 && typeof msg.payload === 'object' && msg.payload !== null) {
-        const p = msg.payload as { connected?: boolean; captureEnabled?: boolean };
-        if (typeof p.connected === 'boolean') {
-          setCoreConnected(p.connected);
+        const p = msg.payload as { _bridge?: boolean; connected?: boolean; captureEnabled?: boolean };
+
+        // Bridge connection/disconnection events (from electron main process)
+        if (p._bridge) {
+          setCoreConnected(!!p.connected);
           if (p.connected) { syncToCore(); requestStatus(); }
+          return;
         }
+
+        // Core status responses (from rewsd_core via pipe)
         if (typeof p.captureEnabled === 'boolean') setCaptureEnabled(p.captureEnabled);
-      }
-      if (msg.type === 200 && typeof msg.payload === 'object' && msg.payload !== null) {
-        const p = msg.payload as { connected?: boolean };
-        if (p.connected === false) setCoreConnected(false);
       }
     });
 

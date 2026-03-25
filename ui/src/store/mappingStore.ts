@@ -19,8 +19,10 @@ export interface MouseConfig {
   accelCurve:      AccelPoint[];
   // Deadzone
   deadzone:        number;
-  // Smoothing (EMA: 1 = none, 10 = heavy)
-  smoothSamples:   number;
+  // Smoothing (EMA time constant in seconds: 0 = off, 0.002-0.008 = light)
+  smoothingFactor: number;
+  // Anti-acceleration spike: max stick change per frame (0 = unlimited)
+  maxStepPerFrame: number;
   // Jitter filter (px) — filters optical sensor noise at rest
   jitterThreshold: number;
   // Decay: how long stick holds position after mouse stops
@@ -36,7 +38,8 @@ const DEFAULT_CONFIG: MouseConfig = {
   maxSpeed:        1.0,
   accelCurve:      [],
   deadzone:        0.05,
-  smoothSamples:   2,
+  smoothingFactor: 0,
+  maxStepPerFrame: 0,
   jitterThreshold: 1.5,
   decayDelay:      100,
   decayRate:       6,
@@ -44,21 +47,15 @@ const DEFAULT_CONFIG: MouseConfig = {
 };
 
 const WARZONE_CONFIG: MouseConfig = {
-  sensitivityX:    3.5,
-  sensitivityY:    3.5,
-  exponent:        1.3,
+  sensitivityX:    7.0,
+  sensitivityY:    7.0,
+  exponent:        1.0,
   maxSpeed:        1.0,
-  accelCurve: [
-    { speed: 0,  mult: 0.12 },
-    { speed: 3,  mult: 0.20 },
-    { speed: 8,  mult: 0.38 },
-    { speed: 20, mult: 0.65 },
-    { speed: 40, mult: 0.85 },
-    { speed: 70, mult: 1.00 },
-  ],
+  accelCurve:      [],
   deadzone:        0.0,
-  smoothSamples:   3,
-  jitterThreshold: 0.5,
+  smoothingFactor: 0,
+  maxStepPerFrame: 0,
+  jitterThreshold: 0.3,
   decayDelay:      0,
   decayRate:       0,
   decayMinStick:   0,
@@ -232,6 +229,10 @@ export const useBindingStore = create<MappingStore>()(
           ...(rawMouse.sensitivity != null && rawMouse.sensitivityX == null
             ? { sensitivityX: rawMouse.sensitivity, sensitivityY: rawMouse.sensitivity }
             : {}),
+          // Legacy: convert smoothSamples → smoothingFactor
+          ...(rawMouse.smoothSamples != null && rawMouse.smoothingFactor == null
+            ? { smoothingFactor: rawMouse.smoothSamples <= 1 ? 0 : rawMouse.smoothSamples * 0.001 }
+            : {}),
         };
 
         set({ bindings: resolvedBindings, mouseBindings: resolvedMouseBindings, mouseConfig: resolvedMouse, activeProfile: trimmed });
@@ -251,9 +252,25 @@ export const useBindingStore = create<MappingStore>()(
       },
     }),
     {
-      name: 'rewsd-mappings-v3',
+      name: 'rewsd-mappings-v4',
       onRehydrateStorage: () => (state) => {
-        state?.refreshProfiles();
+        if (state) {
+          state.refreshProfiles();
+          // Migrate legacy smoothSamples → smoothingFactor
+          const mc = state.mouseConfig as MouseConfig & { smoothSamples?: number };
+          if (mc.smoothSamples != null && (mc as any).smoothingFactor == null) {
+            state.mouseConfig = {
+              ...DEFAULT_CONFIG,
+              ...mc,
+              smoothingFactor: mc.smoothSamples <= 1 ? 0 : mc.smoothSamples * 0.001,
+              maxStepPerFrame: 0,
+            };
+            delete (state.mouseConfig as any).smoothSamples;
+          }
+          // Ensure new fields exist
+          if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
+          if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
+        }
       },
     }
   )

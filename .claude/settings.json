@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(powershell.exe -Command \"Test-Path ''C:\\\\InputBus\\\\ui\\\\release-portable\\\\InputBus-win32-x64\\\\resources\\\\app\\\\release''\")",
-      "Bash(powershell.exe -Command \":*)"
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''./portable-out/InputBus-win32-x64/resources/core'' | Out-Null; Copy-Item ''../core/build/Release/rewsd_core.exe'' ''./portable-out/InputBus-win32-x64/resources/core/rewsd_core.exe'' -Force\")",
+      "Bash(powershell -Command \"Copy-Item ''C:\\\\InputBus\\\\core\\\\build\\\\Release\\\\rewsd_core.exe'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\core\\\\rewsd_core.exe'' -Force; Copy-Item ''C:\\\\InputBus\\\\profiles\\\\warzone.json'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\profiles\\\\'' -Force; echo ''Done''\")"
     ],
     "additionalDirectories": [
       "C:\\InputBus",

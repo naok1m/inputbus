@@ -41,9 +41,10 @@ const SECTIONS: { title: string; fields: Field[] }[] = [
     ],
   },
   {
-    title: 'Smoothing',
+    title: 'Smoothing & Anti-Spike',
     fields: [
-      { key: 'smoothSamples',   label: 'Smooth Samples',    min: 1,   max: 10,   step: 1    },
+      { key: 'smoothingFactor', label: 'Smoothing',         min: 0,   max: 0.05, step: 0.001 },
+      { key: 'maxStepPerFrame', label: 'Max Step/Frame',    min: 0,   max: 0.3,  step: 0.005 },
     ],
   },
 ];
@@ -219,7 +220,7 @@ export function SensitivityEditor() {
                   }
                 />
                 <span className="slider-value">
-                  {key === 'decayRate' && val === 0
+                  {(key === 'decayRate' || key === 'smoothingFactor' || key === 'maxStepPerFrame') && val === 0
                     ? 'OFF'
                     : `${fmt(val, step)}${unit ? ` ${unit}` : ''}`
                   }

@@ -18,8 +18,8 @@
     "deadzone": 0.015,
     "jitterThreshold": 0.3,
 
-    "smoothSamples": 3,
-    "smoothFactor": 0.25,
+    "smoothingFactor": 0.003,
+    "maxStepPerFrame": 0.06,
 
     "decayDelay": 120.0,
     "decayRate": 5.5,

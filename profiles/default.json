@@ -6,7 +6,8 @@
     "exponent": 1.0,
     "maxSpeed": 1.0,
     "deadzone": 0.01,
-    "smoothSamples": 2,
+    "smoothingFactor": 0,
+    "maxStepPerFrame": 0,
     "target": "rightStick"
   },
   "keyBindings": {

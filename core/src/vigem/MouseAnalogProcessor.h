@@ -49,7 +49,13 @@ struct AnalogCurveConfig {
     float deadzone        = 0.05f;  // Circular deadzone; input below this is ignored
 
     // --- Smoothing (exponential moving average on output) ---
-    int   smoothSamples   = 2;      // 1 = no smoothing, 10 = heavy
+    // 0 = disabled (zero latency), 0.02-0.08 = light, >0.1 = heavy
+    float smoothingFactor = 0.0f;
+
+    // --- Anti-acceleration spike ---
+    // Max stick change per frame (normalized units). 0 = unlimited.
+    // Prevents sudden jumps at movement start. Typical: 0.05 ~ 0.15
+    float maxStepPerFrame = 0.0f;
 
     // --- Jitter filter ---
     float jitterThreshold = 1.5f;   // Drop raw deltas smaller than this (pixels)

@@ -110,7 +110,13 @@ int main() {
                         if (j.contains("exponent"))        cfg.exponent        = j["exponent"];
                         if (j.contains("maxSpeed"))        cfg.maxSpeed        = j["maxSpeed"];
                         if (j.contains("deadzone"))        cfg.deadzone        = j["deadzone"];
-                        if (j.contains("smoothSamples"))   cfg.smoothSamples   = j["smoothSamples"];
+                        if (j.contains("smoothingFactor")) cfg.smoothingFactor = j["smoothingFactor"];
+                        if (j.contains("maxStepPerFrame")) cfg.maxStepPerFrame = j["maxStepPerFrame"];
+                        // Legacy compat: convert old smoothSamples → smoothingFactor
+                        if (j.contains("smoothSamples") && !j.contains("smoothingFactor")) {
+                            int samples = j["smoothSamples"];
+                            cfg.smoothingFactor = (samples <= 1) ? 0.0f : static_cast<float>(samples) * 0.001f;
+                        }
                         if (j.contains("jitterThreshold")) cfg.jitterThreshold = j["jitterThreshold"];
                         if (j.contains("decayDelay"))      cfg.decayDelay      = j["decayDelay"];
                         if (j.contains("decayRate"))       cfg.decayRate       = j["decayRate"];

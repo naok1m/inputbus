@@ -24,13 +24,26 @@ function startCore() {
     return;
   }
 
+  const coreDir = path.dirname(corePath);
+  console.log(`[Core] Launching: ${corePath}`);
+  console.log(`[Core] CWD: ${coreDir}`);
+
   coreProcess = spawn(corePath, [], {
-    cwd: path.dirname(corePath),
+    cwd: coreDir,
     windowsHide: true,
-    stdio: 'ignore'
+    stdio: ['ignore', 'pipe', 'pipe']
   });
 
-  coreProcess.on('exit', () => {
+  coreProcess.stdout?.on('data', (d: Buffer) => console.log(`[Core] ${d.toString().trimEnd()}`));
+  coreProcess.stderr?.on('data', (d: Buffer) => console.error(`[Core] ${d.toString().trimEnd()}`));
+
+  coreProcess.on('exit', (code) => {
+    console.log(`[Core] Exited with code ${code}`);
+    coreProcess = null;
+  });
+
+  coreProcess.on('error', (err) => {
+    console.error(`[Core] Spawn error: ${err.message}`);
     coreProcess = null;
   });
 }
@@ -67,16 +80,20 @@ function createWindow() {
   bridge.on('connected', () => {
     win.webContents.send('core-message', {
       type: 100,
-      payload: { connected: true }
+      payload: { _bridge: true, connected: true }
     });
   });
 
-  bridge.on('error', (err: Error) => {
-    // Core may be offline during UI startup; keep renderer alive and retry in bridge.
+  bridge.on('disconnected', () => {
     win.webContents.send('core-message', {
-      type: 200,
-      payload: { connected: false, error: err.message }
+      type: 100,
+      payload: { _bridge: true, connected: false }
     });
+  });
+
+  bridge.on('error', (_err: Error) => {
+    // Errors are expected during startup while core pipe isn't ready.
+    // Connection state is tracked via 'connected'/'disconnected' events only.
   });
 
   bridge.on('message', ({ type, payload }) => {

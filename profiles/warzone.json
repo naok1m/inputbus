@@ -1,29 +1,23 @@
 {
-  "profileName": "Warzone — Precision Aim",
+  "profileName": "Warzone — Competitive",
   "version": "2.0",
-  "description": "Perfil otimizado para Warzone: curva de aceleração multi-ponto, decay lento, precisão cirúrgica em micro-aim",
+  "description": "Linear, sem aceleração, resposta imediata. Sens alta o suficiente para flicks rápidos.",
 
   "mouse": {
-    "sensitivityX": 3.5,
-    "sensitivityY": 3.5,
+    "sensitivityX": 7.0,
+    "sensitivityY": 7.0,
 
-    "exponent": 1.3,
+    "exponent": 1.0,
 
-    "accelCurve": [
-      { "speed": 0,   "mult": 0.12 },
-      { "speed": 3,   "mult": 0.20 },
-      { "speed": 8,   "mult": 0.38 },
-      { "speed": 20,  "mult": 0.65 },
-      { "speed": 40,  "mult": 0.85 },
-      { "speed": 70,  "mult": 1.00 }
-    ],
+    "accelCurve": [],
 
     "maxSpeed": 1.0,
 
     "deadzone": 0.0,
-    "jitterThreshold": 0.5,
+    "jitterThreshold": 0.3,
 
-    "smoothSamples": 3,
+    "smoothingFactor": 0,
+    "maxStepPerFrame": 0,
 
     "decayDelay": 0.0,
     "decayRate": 0.0,

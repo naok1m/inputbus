@@ -23,9 +23,11 @@ export class CoreBridge extends EventEmitter {
       this.emit('error', e);
     });
     this.socket.on('close', () => {
+      const wasConnected = this.connected;
       this.connected = false;
       this.socket = null;
       this.recvBuffer = Buffer.alloc(0);
+      if (wasConnected) this.emit('disconnected');
       this.scheduleReconnect();
     });
   }
