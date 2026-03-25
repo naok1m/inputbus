@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/InputBus/**)",
+      "Bash(cmake -B build -G \"Visual Studio 17 2022\" -A x64)"
+    ]
+  }
+}

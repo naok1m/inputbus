@@ -1,118 +1,202 @@
-# InputBus
+# ViGEm Client Native SDK
 
-InputBus is a personal alternative to reWASD: it captures keyboard/mouse input and maps it to a virtual Xbox 360 gamepad through ViGEm.
+C/C++ developer SDK for communication with [`ViGEmBus`](https://github.com/nefarius/ViGEmBus).
 
-## What was implemented
+[![Build status](https://ci.appveyor.com/api/projects/status/k806d3m2egjr0j56?svg=true)](https://ci.appveyor.com/project/nefarius/vigemclient) [![Discord](https://img.shields.io/discord/346756263763378176.svg)](https://discord.nefarius.at)
 
-- Profile system in UI with `Save Profile` and `Load Profile`
-- Local profile persistence using keys `profile_{name}` in `localStorage`
-- IPC sync from renderer to core using secure preload bridge
-- Real-time `GamepadPreview` component driven by `GamepadState` IPC messages
-- Example profile file: `profiles/fps.json`
-- Core CMake setup and third-party folder structure for `nlohmann/json` and `ViGEmClient`
+---
 
-## Project structure highlights
+## 🧟 THIS PROJECT HAS BEEN RETIRED 🧟
 
-- Core executable: `core/`
-- Electron + React UI: `ui/`
-- Profiles: `profiles/`
+Users of this software are encouraged to [read the end-of-life statement](https://docs.nefarius.at/projects/ViGEm/End-of-Life/). So long, cheers 🖖
 
-## Prerequisites (Windows)
+---
 
-- Node.js 20+
-- npm 10+
-- CMake (required to compile core)
-- Visual Studio 2022 with C++ build tools
-- ViGEmBus driver installed (kernel driver)
+## About
 
-## Third-party dependencies
+**TL;DR:** use this if you want to create virtual game controllers from your C/C++ application 😊
 
-### nlohmann JSON
+The `ViGEmClient` provides a small library exposing a simple API for creating and "feeding" (periodically updating it with new input data) virtual game controllers through [`ViGEmBus`](https://github.com/nefarius/ViGEmBus). The library takes care of discovering a compatible instance of the bus driver on the user's system and abstracting away the inner workings of the emulation framework. You can use and distribute it with your project as either a static component (recommended) or a dynamic library (DLL). API calls affecting a shared `PVIGEM_CLIENT` or `PVIGEM_TARGET` still require caller-side synchronization.
 
-Header location expected by build:
+## How to build
 
-- `core/third_party/nlohmann/json.hpp`
+### Prerequisites
 
-This repository now contains that file path.
+- Visual Studio **2019** ([Community Edition](https://www.visualstudio.com/thank-you-downloading-visual-studio/?sku=Community&rel=16) is just fine)
+  - When linking statically, make sure to also link against `setupapi.lib`
 
-### ViGEmClient
+## Contribute
 
-Header location:
+### Bugs & Features
 
-- `core/third_party/ViGEmClient/include/ViGEm/Client.h`
+Found a bug and want it fixed? Open a detailed issue on the [GitHub issue tracker](../../issues)!
 
-Library location expected by CMake:
+Have an idea for a new feature? Let's have a chat about your request on [our support channels](https://docs.nefarius.at/Community-Support/).
 
-- `core/third_party/ViGEmClient/lib/ViGEmClient.lib`
+### Questions & Support
 
-Note: the header files are in place, but you still need `ViGEmClient.lib` in the `lib` folder.
+Please respect that the GitHub issue tracker isn't a helpdesk. We offer [support resources](https://docs.nefarius.at/Community-Support/), where you're welcome to check out and engage in discussions!
 
-## Build and run
+## How to use
 
-### 1. Install UI dependencies
+### Integration
 
-```powershell
-cd ui
-npm install
+Integrating this library into your project is pretty straight-forward, there are no additional 3rd party dependencies. You can either `git submodule` or `git subtree` this repository directly into your source tree or use the provided [`vcpkg`](https://github.com/microsoft/vcpkg) package manager integration [found here](https://github.com/nefarius/ViGEmClient.vcpkg) (recommended, can be updated with ease). The library tries to handle driver compatibility internally so static linking is recommended to avoid DLL hell 😊
+
+### API usage
+
+For a general overview of the provided types and functions [take a look at the main include file](./include/ViGEm/Client.h).
+
+Now, onwards to a practical example 😉 First, include some basic headers:
+
+```cpp
+//
+// Windows basic types 'n' fun
+//
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+//
+// Optional depending on your use case
+//
+#include <Xinput.h>
+
+//
+// The ViGEm API
+//
+#include <ViGEm/Client.h>
+
+//
+// Link against SetupAPI
+//
+#pragma comment(lib, "setupapi.lib")
 ```
 
-### 2. Run UI in development (Electron + Vite)
+To initialize the API call `vigem_alloc` which gives you an opaque handle to the underlying driver:
 
-```powershell
-npm run dev
+```cpp
+const auto client = vigem_alloc();
+
+if (client == nullptr)
+{
+    std::cerr << "Uh, not enough memory to do that?!" << std::endl;
+    return -1;
+}
 ```
 
-### 3. Build UI
+Establish connection to the driver:
 
-```powershell
-npm run build
+```cpp
+const auto retval = vigem_connect(client);
+
+if (!VIGEM_SUCCESS(retval))
+{
+    std::cerr << "ViGEm Bus connection failed with error code: 0x" << std::hex << retval << std::endl;
+    return -1;
+}
 ```
 
-### 4. Build core
+👉 Note: this is an "expensive" operation, it's recommended you do this once in your project, not every frame for performance benefits.
 
-```powershell
-cd ..
-cmake -B build/core -S core -G "Visual Studio 17 2022" -A x64
-cmake --build build/core --config Release
+---
+
+With this handle we're prepared to spawn (connect) and feed (supply with periodic input updates) one or many emulated controller devices. So let's spawn an Xbox 360 controller:
+
+```cpp
+//
+// Allocate handle to identify new pad
+//
+const auto pad = vigem_target_x360_alloc();
+
+//
+// Add client to the bus, this equals a plug-in event
+//
+const auto pir = vigem_target_add(client, pad);
+
+//
+// Error handling
+//
+if (!VIGEM_SUCCESS(pir))
+{
+    std::cerr << "Target plugin failed with error code: 0x" << std::hex << pir << std::endl;
+    return -1;
+}
+
+XINPUT_STATE state;
+
+//
+// Grab the input from a physical X36ß pad in this example
+//
+XInputGetState(0, &state);
+
+//
+// The XINPUT_GAMEPAD structure is identical to the XUSB_REPORT structure
+// so we can simply take it "as-is" and cast it.
+//
+// Call this function on every input state change e.g. in a loop polling
+// another joystick or network device or thermometer or... you get the idea.
+//
+vigem_target_x360_update(client, pad, *reinterpret_cast<XUSB_REPORT*>(&state.Gamepad));
+
+//
+// We're done with this pad, free resources (this disconnects the virtual device)
+//
+vigem_target_remove(client, pad);
+vigem_target_free(pad);
 ```
 
-### 5. Full build script
+---
 
-```powershell
-./scripts/build.ps1
+Alright, so we got the feeding side of things done, but what about the other direction? After all, the virtual device can receive some state changes as well (for the Xbox 360 device the LED ring can change and rumble/vibration requests can arrive) and this information is of interest for us. This is achieved by defining a notification callback like so:
+
+```cpp
+//
+// Define the callback function
+//
+VOID CALLBACK notification(
+    PVIGEM_CLIENT Client,
+    PVIGEM_TARGET Target,
+    UCHAR LargeMotor,
+    UCHAR SmallMotor,
+    UCHAR LedNumber,
+    LPVOID UserData
+)
+{
+    static int count = 1;
+
+    std::cout.width(3);
+    std::cout << count++ << " ";
+    std::cout.width(3);
+    std::cout << (int)LargeMotor << " ";
+    std::cout.width(3);
+    std::cout << (int)SmallMotor << std::endl;
+}
 ```
 
-## Profiles usage
+Register it:
 
-### Save profile from UI
+```cpp
+const auto retval = vigem_target_x360_register_notification(client, pad, &notification, nullptr);
 
-- Type a name in profile input
-- Click `Save Profile`
-- Data is saved in `localStorage` as `profile_{name}`
+//
+// Error handling
+//
+if (!VIGEM_SUCCESS(retval))
+{
+    std::cerr << "Registering for notification failed with error code: 0x" << std::hex << retval << std::endl;
+    return -1;
+}
+```
 
-### Load profile from UI
+The function `notification` will now get invoked every time a rumble request was sent to the virtual controller and can get handled accordingly. This is a blocking call and the invocation will take place in the order the underlying requests arrived.
 
-- Select saved profile in dropdown
-- Click `Load Profile`
-- UI loads profile from `localStorage`
-- UI sends profile JSON to core via IPC (`MsgType::LoadProfile`)
+---
 
-### Load profile from file (core side)
+Once ViGEm interaction is no longer required (e.g. the application is about to end) the acquired resources need to be freed properly:
 
-- Example: `profiles/fps.json`
-- Core supports `MsgType::LoadProfile` with JSON payload and updates mapper/mouse config
+```cpp
+vigem_disconnect(client);
+vigem_free(client);
+```
 
-## IPC contract used
-
-- Renderer -> Main (Electron): `electronAPI.coreSend(type, payload)`
-- Main -> Core bridge: named pipe `\\.\\pipe\\rewsd_core`
-- Core -> UI realtime state: `MsgType::GamepadState` (type `101`)
-
-## Notes
-
-- `contextIsolation: true` is enabled and renderer access is restricted through preload API.
-- ViGEmBus driver installation is separate from this codebase (`scripts/install-driver.bat`).
-- If core build fails with missing `ViGEmClient.lib`, copy that file into `core/third_party/ViGEmClient/lib/`.
-- Core starts with capture disabled by default for safety.
-- Emergency stop/toggle: release `F12` to toggle capture on/off even without UI.
-- UI can also toggle capture using IPC `MsgType::SetCaptureEnabled`.
+After that the `client` handle will become invalid and must not be used again.

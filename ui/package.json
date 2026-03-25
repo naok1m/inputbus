@@ -12,7 +12,7 @@
 		"build:electron": "tsc -p electron/tsconfig.json",
 		"preview": "vite preview",
 		"dist": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis",
-		"dist:portable": "npm run build && electron-packager . InputBus --platform=win32 --arch=x64 --overwrite --out=release-portable --ignore=src --ignore=node_modules/.cache && powershell -Command \"New-Item -ItemType Directory -Force -Path './release-portable/InputBus-win32-x64/resources/core' | Out-Null; Copy-Item '../build/core/Release/rewsd_core.exe' './release-portable/InputBus-win32-x64/resources/core/rewsd_core.exe' -Force\""
+		"dist:portable": "npm run build && electron-packager . InputBus --platform=win32 --arch=x64 --out=portable-out --ignore=^/src --ignore=^/electron --ignore=node_modules/.cache --ignore=release-portable --ignore=portable-out --ignore=release && powershell -Command \"New-Item -ItemType Directory -Force -Path './portable-out/InputBus-win32-x64/resources/core' | Out-Null; Copy-Item '../core/build/Release/rewsd_core.exe' './portable-out/InputBus-win32-x64/resources/core/rewsd_core.exe' -Force\""
 	},
 	"dependencies": {
 		"react": "^18.3.1",

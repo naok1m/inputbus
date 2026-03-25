@@ -1,86 +1,217 @@
-// MouseAnalogProcessor.cpp
+// MouseAnalogProcessor.cpp — integration (accumulation) model
+//
+// Core principle:
+//   stickX += deltaX * sensitivity * SCALE   (NOT stickX = deltaX)
+//
+// This means the stick HOLDS its position when the mouse stops, and only
+// decays back to center gradually. No more instant return to center.
+//
 #include "MouseAnalogProcessor.h"
-#include <numeric>
 #include <algorithm>
+#include <cstring>
 
-void MouseAnalogProcessor::AddDelta(long dx, long dy) {
-    // Convert to float and apply stronger gain for low-pixel mouse motion.
-    m_accX += static_cast<float>(dx) * m_cfg.sensitivity * 0.16f;
-    m_accY += static_cast<float>(dy) * m_cfg.sensitivity * 0.16f;
+namespace {
+    constexpr float EPSILON = 1e-5f;
+
+    // Pixels → stick units conversion.
+    // At sensitivity=1.0: moving ~2000 pixels pushes stick to full deflection.
+    // User adjusts sensitivityX/Y to taste for their DPI.
+    constexpr float SENSITIVITY_SCALE = 0.0005f;
 }
 
-void MouseAnalogProcessor::Tick(float /*deltaTime*/, int16_t& outX, int16_t& outY) {
-    // --- Normalize accumulated delta ---
-    float nx = std::clamp(m_accX, -1.f, 1.f);
-    float ny = std::clamp(m_accY, -1.f, 1.f);
-    m_accX = 0.f; m_accY = 0.f;
+MouseAnalogProcessor::MouseAnalogProcessor(const AnalogCurveConfig& cfg)
+    : m_cfg(cfg)
+{}
 
-    // --- Apply deadzone (circular) ---
-    // Mouse deltas are already discrete and clean, so we soften the configured
-    // deadzone to preserve fine aim adjustments.
-    const float effectiveDeadzone = std::clamp(m_cfg.deadzone * 0.25f, 0.0f, 0.2f);
-    float mag = std::sqrtf(nx*nx + ny*ny);
-    if (mag < effectiveDeadzone) {
-        nx = ny = 0.f;
-        mag = 0.f;
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
+void MouseAnalogProcessor::AddDelta(float dx, float dy) {
+    std::lock_guard lock(m_mutex);
+
+    // Jitter filter: optical sensors emit noise at rest; ignore sub-threshold moves
+    if (std::abs(dx) < m_cfg.jitterThreshold) dx = 0.0f;
+    if (std::abs(dy) < m_cfg.jitterThreshold) dy = 0.0f;
+
+    if (std::abs(dx) > EPSILON || std::abs(dy) > EPSILON) {
+        m_rawAccX += dx;
+        m_rawAccY += dy;
+        m_idleTime = 0.0f;
+    }
+}
+
+void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
+    std::lock_guard lock(m_mutex);
+
+    const float dt = std::clamp(deltaTime, 0.0001f, 0.05f);
+
+    // ========================================================================
+    // 1. CONSUME ACCUMULATED DELTA
+    // ========================================================================
+
+    const float rawX = m_rawAccX;
+    const float rawY = m_rawAccY;
+    m_rawAccX = 0.0f;
+    m_rawAccY = 0.0f;
+
+    m_debugState.rawDeltaX = rawX;
+    m_debugState.rawDeltaY = rawY;
+
+    const bool hasInput = std::abs(rawX) > EPSILON || std::abs(rawY) > EPSILON;
+
+    // ========================================================================
+    // 2. INTEGRATION: accumulate delta into stick position
+    //
+    // stickX += deltaX * sensitivity   ← THE correct model
+    // stickX = deltaX                  ← the broken model (resets every tick)
+    //
+    // The stick now holds its position when the mouse stops.
+    // ========================================================================
+
+    if (hasInput) {
+        m_stickX += rawX * m_cfg.sensitivityX * SENSITIVITY_SCALE;
+        m_stickY += rawY * m_cfg.sensitivityY * SENSITIVITY_SCALE;
+        m_idleTime = 0.0f;
     } else {
-        float scale = (mag - effectiveDeadzone) / (1.f - effectiveDeadzone);
-        if (mag > 0.f) { nx = nx/mag * scale; ny = ny/mag * scale; }
+        m_idleTime += dt;
     }
 
-    // --- Apply acceleration curve ---
-    if (mag > 0.f) {
-        float curved = ApplyCurve(std::min(mag, 1.f));
-        float ratio = curved / mag;
-        nx *= ratio; ny *= ratio;
-    }
+    m_debugState.timeSinceLastInput = m_idleTime * 1000.0f;
 
-    // --- Clamp to max speed ---
-    nx = std::clamp(nx * m_cfg.maxSpeed, -1.f, 1.f);
-    ny = std::clamp(ny * m_cfg.maxSpeed, -1.f, 1.f);
+    // ========================================================================
+    // 3. CLAMP to unit square first, then normalize circle
+    // ========================================================================
 
-    // --- Dynamic response ---
-    // Fast acquisition when there is input, smooth release when stopping.
-    const float response = 0.98f;
-    const float releaseDecay = 0.95f;
-    const int holdTicks = 5; // ~5ms at 1000Hz
-    if (std::abs(nx) > 0.0001f || std::abs(ny) > 0.0001f) {
-        m_idleTicks = 0;
-        m_outX += (nx - m_outX) * response;
-        m_outY += (ny - m_outY) * response;
-    } else {
-        m_idleTicks += 1;
-        if (m_idleTicks > holdTicks) {
-            m_outX *= releaseDecay;
-            m_outY *= releaseDecay;
+    m_stickX = std::clamp(m_stickX, -1.0f, 1.0f);
+    m_stickY = std::clamp(m_stickY, -1.0f, 1.0f);
+
+    if (m_cfg.normalizeVector) {
+        const float mag = std::sqrt(m_stickX * m_stickX + m_stickY * m_stickY);
+        if (mag > 1.0f) {
+            m_stickX /= mag;
+            m_stickY /= mag;
         }
-        if (std::abs(m_outX) < 0.0005f) m_outX = 0.0f;
-        if (std::abs(m_outY) < 0.0005f) m_outY = 0.0f;
     }
 
-    // --- Smoothing (moving average over dynamic output) ---
-    m_smoothX.push_back(m_outX);
-    m_smoothY.push_back(m_outY);
-    if ((int)m_smoothX.size() > m_cfg.smoothSamples) { m_smoothX.pop_front(); m_smoothY.pop_front(); }
+    m_debugState.stickX = m_stickX;
+    m_debugState.stickY = m_stickY;
 
-    float sx = std::accumulate(m_smoothX.begin(), m_smoothX.end(), 0.f) / (float)m_smoothX.size();
-    float sy = std::accumulate(m_smoothY.begin(), m_smoothY.end(), 0.f) / (float)m_smoothY.size();
+    // ========================================================================
+    // 4. DECAY — gradual return to center after mouse stops
+    //
+    // decayDelay: hold time (ms) before decay starts — lets you "hold aim"
+    // decayRate:  exponential decay speed; higher = faster return to center
+    // ========================================================================
 
-    // --- Scale to int16 range ---
-    // Note: Y axis is inverted (mouse down = look down = negative Y in gamepad convention)
-    outX = static_cast<int16_t>(sx *  32767.f);
-    outY = static_cast<int16_t>(sy * -32767.f);
-}
+    const bool isDecaying = (m_idleTime > (m_cfg.decayDelay / 1000.0f));
+    m_debugState.isDecaying = isDecaying;
 
-float MouseAnalogProcessor::ApplyCurve(float v) const {
-    // Signed power curve: preserves sign, applies exponent to magnitude
-    return std::powf(v, m_cfg.exponent);
+    if (isDecaying) {
+        const float decay = std::exp(-m_cfg.decayRate * dt);
+        m_stickX *= decay;
+        m_stickY *= decay;
+
+        // Snap to zero to avoid floating-point denormals
+        if (std::abs(m_stickX) < 0.001f) m_stickX = 0.0f;
+        if (std::abs(m_stickY) < 0.001f) m_stickY = 0.0f;
+    }
+
+    // ========================================================================
+    // 5. EXPONENTIAL SMOOTHING (EMA) on output
+    //
+    // alpha = dt*1000 / smoothSamples  → time-invariant regardless of tick rate
+    // smoothSamples=1: alpha=1 → no lag (output = state)
+    // smoothSamples=5: alpha=0.2 → gentle smoothing
+    // ========================================================================
+
+    const float alpha = std::min(1.0f,
+        (dt * 1000.0f) / static_cast<float>(std::clamp(m_cfg.smoothSamples, 1, 10)));
+
+    m_smoothedX += (m_stickX - m_smoothedX) * alpha;
+    m_smoothedY += (m_stickY - m_smoothedY) * alpha;
+
+    m_debugState.smoothedX = m_smoothedX;
+    m_debugState.smoothedY = m_smoothedY;
+
+    float vx = m_smoothedX;
+    float vy = m_smoothedY;
+
+    // ========================================================================
+    // 6. CIRCULAR DEADZONE with smooth rescaling
+    // ========================================================================
+
+    float mag = std::sqrt(vx * vx + vy * vy);
+    m_debugState.magnitude = mag;
+
+    if (mag < m_cfg.deadzone) {
+        vx = vy = 0.0f;
+        mag = 0.0f;
+    } else if (mag > EPSILON) {
+        const float scale = std::clamp(
+            (mag - m_cfg.deadzone) / (1.0f - m_cfg.deadzone), 0.0f, 1.0f);
+        vx = (vx / mag) * scale;
+        vy = (vy / mag) * scale;
+        mag = scale;
+    }
+
+    // ========================================================================
+    // 7. RESPONSE CURVE (applied to magnitude, preserves direction)
+    // ========================================================================
+
+    if (mag > EPSILON && m_cfg.exponent != 1.0f) {
+        const float curved = std::pow(mag, m_cfg.exponent);
+        const float ratio  = curved / mag;
+        vx *= ratio;
+        vy *= ratio;
+        mag = curved;
+    }
+
+    // ========================================================================
+    // 8. FINAL CLAMP to maxSpeed
+    // ========================================================================
+
+    vx = std::clamp(vx * m_cfg.maxSpeed, -1.0f, 1.0f);
+    vy = std::clamp(vy * m_cfg.maxSpeed, -1.0f, 1.0f);
+
+    m_debugState.outputX = vx;
+    m_debugState.outputY = vy;
+
+    // ========================================================================
+    // 9. CONVERT TO INT16 (XInput range)
+    //    Y is negated: mouse-down = look-down = negative gamepad Y
+    // ========================================================================
+
+    outX = static_cast<int16_t>(vx *  32767.0f);
+    outY = static_cast<int16_t>(vy * -32767.0f);
 }
 
 void MouseAnalogProcessor::Reset() {
-    m_accX = m_accY = 0.f;
-    m_outX = m_outY = 0.f;
-    m_idleTicks = 0;
-    m_smoothX.clear();
-    m_smoothY.clear();
+    std::lock_guard lock(m_mutex);
+    m_rawAccX = m_rawAccY = 0.0f;
+    m_stickX  = m_stickY  = 0.0f;
+    m_smoothedX = m_smoothedY = 0.0f;
+    m_idleTime = 0.0f;
+    std::memset(&m_debugState, 0, sizeof(m_debugState));
+}
+
+void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
+    std::lock_guard lock(m_mutex);
+    m_cfg = cfg;
+
+    // Clamp to safe ranges
+    m_cfg.sensitivityX    = std::clamp(m_cfg.sensitivityX,    0.1f,  20.0f);
+    m_cfg.sensitivityY    = std::clamp(m_cfg.sensitivityY,    0.1f,  20.0f);
+    m_cfg.exponent        = std::clamp(m_cfg.exponent,        0.5f,   3.0f);
+    m_cfg.maxSpeed        = std::clamp(m_cfg.maxSpeed,        0.1f,   1.0f);
+    m_cfg.deadzone        = std::clamp(m_cfg.deadzone,        0.0f,   0.3f);
+    m_cfg.smoothSamples   = std::clamp(m_cfg.smoothSamples,   1,       10);
+    m_cfg.jitterThreshold = std::clamp(m_cfg.jitterThreshold, 0.0f,   5.0f);
+    m_cfg.decayDelay      = std::clamp(m_cfg.decayDelay,      0.0f, 500.0f);
+    m_cfg.decayRate       = std::clamp(m_cfg.decayRate,       0.5f,  20.0f);
+}
+
+MouseAnalogProcessor::DebugState MouseAnalogProcessor::GetDebugState() const {
+    std::lock_guard lock(m_mutex);
+    return m_debugState;
 }

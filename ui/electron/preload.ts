@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 		const listener = (_event: Electron.IpcRendererEvent, msg: CoreMessage) => handler(msg);
 		ipcRenderer.on('core-message', listener);
 		return () => ipcRenderer.removeListener('core-message', listener);
-	}
+	},
+	closeWindow: () => ipcRenderer.send('close-window'),
 });

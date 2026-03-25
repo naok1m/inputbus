@@ -12,7 +12,7 @@ function resolveCorePath() {
     return path.join(process.resourcesPath, 'core', 'rewsd_core.exe');
   }
 
-  return path.resolve(__dirname, '../../build/core/Release/rewsd_core.exe');
+  return path.resolve(__dirname, '../../core/build/Release/rewsd_core.exe');
 }
 
 function startCore() {
@@ -88,6 +88,9 @@ function createWindow() {
     bridge.send(type, payload);
     return { ok: true };
   });
+
+  // Frameless window close button
+  ipcMain.on('close-window', () => win.close());
 }
 
 app.whenReady().then(() => {

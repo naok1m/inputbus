@@ -7,5 +7,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         const listener = (_event, msg) => handler(msg);
         electron_1.ipcRenderer.on('core-message', listener);
         return () => electron_1.ipcRenderer.removeListener('core-message', listener);
-    }
+    },
+    closeWindow: () => electron_1.ipcRenderer.send('close-window'),
 });

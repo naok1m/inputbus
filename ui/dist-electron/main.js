@@ -44,7 +44,7 @@ function resolveCorePath() {
     if (electron_1.app.isPackaged) {
         return path.join(process.resourcesPath, 'core', 'rewsd_core.exe');
     }
-    return path.resolve(__dirname, '../../build/core/Release/rewsd_core.exe');
+    return path.resolve(__dirname, '../../core/build/Release/rewsd_core.exe');
 }
 function startCore() {
     if (coreProcess && !coreProcess.killed)
@@ -110,6 +110,8 @@ function createWindow() {
         bridge.send(type, payload);
         return { ok: true };
     });
+    // Frameless window close button
+    electron_1.ipcMain.on('close-window', () => win.close());
 }
 electron_1.app.whenReady().then(() => {
     startCore();

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"Test-Path ''C:\\\\InputBus\\\\ui\\\\release-portable\\\\InputBus-win32-x64\\\\resources\\\\app\\\\release''\")",
+      "Bash(powershell.exe -Command \":*)"
+    ],
+    "additionalDirectories": [
+      "C:\\InputBus",
+      "C:\\InputBus\\core\\build\\Release"
+    ]
+  }
+}

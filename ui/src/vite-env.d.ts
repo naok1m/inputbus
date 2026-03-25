@@ -5,6 +5,7 @@ declare global {
     electronAPI?: {
       coreSend: (type: number, payload: unknown) => Promise<{ ok: boolean }>;
       onCoreMessage?: (handler: (msg: { type: number; payload: unknown }) => void) => () => void;
+      closeWindow?: () => void;
     };
   }
 }

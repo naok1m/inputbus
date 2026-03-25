@@ -1,68 +1,78 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useBindingStore } from '../store/mappingStore';
 
 export function ProfileSelector() {
   const { activeProfile, savedProfiles, saveProfile, loadProfile, refreshProfiles, resetFpsDefaults } = useBindingStore();
-  const [profileName, setProfileName] = useState(activeProfile || 'default');
-  const [selectedProfile, setSelectedProfile] = useState(activeProfile || 'default');
+  const [newName, setNewName]   = useState('');
+  const [selected, setSelected] = useState(activeProfile || '');
 
-  useEffect(() => {
-    refreshProfiles();
-  }, [refreshProfiles]);
-
-  useEffect(() => {
-    setSelectedProfile(activeProfile);
-  }, [activeProfile]);
-
-  const hasProfiles = savedProfiles.length > 0;
-  const options = useMemo(() => savedProfiles, [savedProfiles]);
+  useEffect(() => { refreshProfiles(); }, [refreshProfiles]);
+  useEffect(() => { setSelected(activeProfile); }, [activeProfile]);
 
   const onSave = (e: FormEvent) => {
     e.preventDefault();
-    const name = profileName.trim();
+    const name = newName.trim() || activeProfile;
     if (!name) return;
     saveProfile(name);
-    setSelectedProfile(name);
+    setNewName('');
     refreshProfiles();
   };
 
-  const onLoad = () => {
-    if (!selectedProfile) return;
-    loadProfile(selectedProfile);
-  };
-
   return (
-    <section className="profile-selector card">
-      <h2>Profiles</h2>
-      <form className="profile-form" onSubmit={onSave}>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">Profiles</span>
+        <span className="card-badge">{savedProfiles.length} saved</span>
+      </div>
+
+      <form className="profile-row" onSubmit={onSave}>
         <input
-          value={profileName}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setProfileName(e.target.value)}
-          placeholder="Profile name"
-          aria-label="Profile name"
+          type="text"
+          value={newName}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setNewName(e.target.value)}
+          placeholder={activeProfile || 'profile name…'}
         />
-        <button type="submit">Save Profile</button>
+        <button type="submit" className="btn btn-primary">Save</button>
       </form>
 
-      <div className="profile-load-row">
-        <select
-          value={selectedProfile}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedProfile(e.target.value)}
-          disabled={!hasProfiles}
-          aria-label="Saved profiles"
-        >
-          {!hasProfiles && <option value="">No saved profiles</option>}
-          {options.map((name: string) => (
-            <option key={name} value={name}>{name}</option>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        style={{ width: '100%', marginBottom: 12 }}
+        onClick={resetFpsDefaults}
+      >
+        Load FPS Defaults
+      </button>
+
+      {savedProfiles.length > 0 && (
+        <div className="profile-list">
+          {savedProfiles.map(name => (
+            <div
+              key={name}
+              className={`profile-item ${name === activeProfile ? 'active-profile' : ''}`}
+            >
+              <span className="profile-name">{name}</span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: '3px 10px', fontSize: 11 }}
+                onClick={() => {
+                  setSelected(name);
+                  loadProfile(name);
+                }}
+              >
+                Load
+              </button>
+            </div>
           ))}
-        </select>
-        <button type="button" onClick={onLoad} disabled={!hasProfiles || !selectedProfile}>
-          Load Profile
-        </button>
-        <button type="button" onClick={resetFpsDefaults}>
-          Reset FPS Default
-        </button>
-      </div>
-    </section>
+        </div>
+      )}
+
+      {savedProfiles.length === 0 && (
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 8 }}>
+          No saved profiles yet.
+        </p>
+      )}
+    </div>
   );
 }
