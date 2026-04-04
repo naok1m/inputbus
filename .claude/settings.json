@@ -7,7 +7,14 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''./portable-out/InputBus-win32-x64/resources/core'' | Out-Null; Copy-Item ''../core/build/Release/rewsd_core.exe'' ''./portable-out/InputBus-win32-x64/resources/core/rewsd_core.exe'' -Force\")",
-      "Bash(powershell -Command \"Copy-Item ''C:\\\\InputBus\\\\core\\\\build\\\\Release\\\\rewsd_core.exe'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\core\\\\rewsd_core.exe'' -Force; Copy-Item ''C:\\\\InputBus\\\\profiles\\\\warzone.json'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\profiles\\\\'' -Force; echo ''Done''\")"
+      "Bash(powershell -Command \"Copy-Item ''C:\\\\InputBus\\\\core\\\\build\\\\Release\\\\rewsd_core.exe'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\core\\\\rewsd_core.exe'' -Force; Copy-Item ''C:\\\\InputBus\\\\profiles\\\\warzone.json'' ''C:\\\\InputBus\\\\ui\\\\portable-out\\\\InputBus-win32-x64\\\\resources\\\\profiles\\\\'' -Force; echo ''Done''\")",
+      "Bash(cp /c/InputBus/core/build/Release/rewsd_core.exe /c/InputBus/ui/portable-v4/InputBus-win32-x64/resources/core/)",
+      "Bash(cp -r /c/InputBus/ui/dist/* /c/InputBus/ui/portable-v4/InputBus-win32-x64/resources/app/dist/)",
+      "Bash(cp -r /c/InputBus/ui/dist-electron/* /c/InputBus/ui/portable-v4/InputBus-win32-x64/resources/app/dist-electron/)",
+      "Bash(cp /c/InputBus/core/build/Release/rewsd_core.exe /c/InputBus/dist/rewsd_core.exe)",
+      "Bash(cp /c/InputBus/core/build/Release/rewsd_core.exe /c/InputBus/ui/portable-v4/InputBus-win32-x64/resources/)",
+      "Bash(cp /c/InputBus/core/build/Release/rewsd_core.exe /c/InputBus/ui/portable-v4/InputBus-win32-x64/resources/rewsd_core.exe)",
+      "Bash(taskkill //F //IM InputBus.exe)"
     ],
     "additionalDirectories": [
       "C:\\InputBus",

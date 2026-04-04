@@ -25,6 +25,11 @@ static constexpr int MAX_ACCEL_POINTS = 8;
 // ============================================================================
 
 struct AnalogCurveConfig {
+    // --- DPI normalization ---
+    // All deltas are scaled by (referenceDPI / mouseDPI) so sensitivity
+    // settings feel identical regardless of hardware DPI.
+    float mouseDPI        = 800.0f;  // User's actual mouse DPI
+
     // --- Sensitivity ---
     float sensitivityX    = 1.0f;
     float sensitivityY    = 1.0f;
@@ -65,6 +70,11 @@ struct AnalogCurveConfig {
     float decayRate       = 6.0f;   // Exponential decay speed (higher = faster return)
     float decayMinStick   = 0.0f;   // Stick floor: decay stops below this magnitude (hold-aim)
 
+    // --- Anti-deadzone (output-side) ---
+    // Ensures output always starts above the game's internal deadzone.
+    // Maps [0,1] → [antiDeadzone, 1] when output > 0.
+    float antiDeadzone    = 0.0f;   // 0 = disabled, typical: 0.02–0.10
+
     // --- Vector normalization ---
     bool  normalizeVector = true;   // Cap diagonal magnitude to 1.0
 };
@@ -81,6 +91,10 @@ public:
     void Tick(float deltaTime, int16_t& outX, int16_t& outY);
     void Reset();
     void UpdateConfig(const AnalogCurveConfig& cfg);
+
+    // Runtime sensitivity multiplier (e.g. for PQD boost). Thread-safe.
+    void SetSensitivityMultiplier(float mult);
+    float GetSensitivityMultiplier() const;
 
     // ========================================================================
     // DEBUG / TELEMETRY
@@ -106,6 +120,7 @@ private:
 
     AnalogCurveConfig m_cfg;
     mutable std::mutex m_mutex;
+    std::atomic<float> m_sensMultiplier{1.0f};
 
     float m_rawAccX = 0.0f;
     float m_rawAccY = 0.0f;

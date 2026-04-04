@@ -29,6 +29,7 @@ public:
             if (j.contains("mouse")) {
                 const auto& m = j["mouse"];
 
+                if (m.contains("mouseDPI"))        cfg.mouseDPI        = m["mouseDPI"].get<float>();
                 if (m.contains("sensitivity")) {
                     float s = m["sensitivity"].get<float>();
                     cfg.sensitivityX = cfg.sensitivityY = s;

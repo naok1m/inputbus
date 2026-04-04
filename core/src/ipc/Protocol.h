@@ -13,6 +13,7 @@ enum class MsgType : uint32_t {
     GetStatus       = 4,
     SetActiveProfile= 5,
     SetCaptureEnabled = 6,
+    SetMacroConfig    = 7,
     
     // Core → UI
     StatusResponse  = 100,

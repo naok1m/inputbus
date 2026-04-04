@@ -1,0 +1,50 @@
+{
+  "profileName": "FPS - High Sensitivity (v2)",
+  "version": "2.0",
+  "description": "Perfil de alta sensibilidade para movimentos rápidos e flick shots",
+
+  "mouse": {
+    "comment": "Configuração agressiva para movimentos rápidos",
+
+    "sensitivityX": 4.2,
+    "sensitivityY": 4.2,
+    "exponent": 1.0,
+    "minCurveThreshold": 0.08,
+
+    "maxSpeed": 1.0,
+    "acceleration": 15.0,
+    "deceleration": 20.0,
+
+    "deadzone": 0.01,
+    "jitterThreshold": 0.2,
+
+    "smoothingFactor": 0,
+    "maxStepPerFrame": 0.1,
+
+    "decayDelay": 80.0,
+    "decayRate": 7.0,
+
+    "normalizeVector": true,
+    "independentAxes": false,
+
+    "target": "rightStick"
+  },
+
+  "keyBindings": {
+    "87":  { "target": "leftStickY", "axisValue": 1.0,  "label": "W → LS Up" },
+    "83":  { "target": "leftStickY", "axisValue": -1.0, "label": "S → LS Down" },
+    "65":  { "target": "leftStickX", "axisValue": -1.0, "label": "A → LS Left" },
+    "68":  { "target": "leftStickX", "axisValue": 1.0,  "label": "D → LS Right" },
+    "32":  { "target": "button", "mask": 4096,  "label": "Space → A" },
+    "17":  { "target": "button", "mask": 8192,  "label": "Ctrl → B" },
+    "16":  { "target": "button", "mask": 16384, "label": "Shift → X" },
+    "82":  { "target": "rightTrigger", "axisValue": 1.0, "label": "R → RT" }
+  },
+
+  "mouseBindings": {
+    "0": { "target": "rightTrigger", "axisValue": 1.0, "label": "LMB → RT" },
+    "1": { "target": "leftTrigger",  "axisValue": 1.0, "label": "RMB → LT" },
+    "3": { "target": "button", "mask": 32768, "label": "Mouse X1 → Y" },
+    "4": { "target": "button", "mask": 4096,  "label": "Mouse X2 → A" }
+  }
+}

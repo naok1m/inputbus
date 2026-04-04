@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Read(//c/InputBus/**)",
-      "Bash(cmake -B build -G \"Visual Studio 17 2022\" -A x64)"
+      "Bash(cmake -B build -G \"Visual Studio 17 2022\" -A x64)",
+      "Bash(find /c/InputBus -maxdepth 2 -name rewsd_core.exe -o -name *.exe)",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''''./portable-out/InputBus-win32-x64/resources/core'''' | Out-Null; Copy-Item ''''../core/build/Release/rewsd_core.exe'''' ''''./portable-out/InputBus-win32-x64/resources/core/rewsd_core.exe'''' -Force; Copy-Item ''''../profiles'''' ''''./portable-out/InputBus-win32-x64/resources/core/profiles'''' -Recurse -Force\")",
+      "Bash(find /c/InputBus/ui/src /c/InputBus/ui/public -type f \\\\\\(-iname *.png -o -iname *.jpg -o -iname *.jpeg -o -iname *.svg \\\\\\))",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''''./portable-out2/InputBus-win32-x64/resources/core'''' | Out-Null; Copy-Item ''''../core/build/Release/rewsd_core.exe'''' ''''./portable-out2/InputBus-win32-x64/resources/core/rewsd_core.exe'''' -Force; Copy-Item ''''../profiles'''' ''''./portable-out2/InputBus-win32-x64/resources/core/profiles'''' -Recurse -Force\")",
+      "Bash(powershell -Command \"Copy-Item ''''../core/build/Release/rewsd_core.exe'''' ''''./portable-out2/InputBus-win32-x64/resources/core/rewsd_core.exe'''' -Force; Copy-Item ''''../profiles'''' ''''./portable-out2/InputBus-win32-x64/resources/core/profiles'''' -Recurse -Force\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''''./portable-out3/InputBus-win32-x64/resources/core'''' | Out-Null; Copy-Item ''''../core/build/Release/rewsd_core.exe'''' ''''./portable-out3/InputBus-win32-x64/resources/core/rewsd_core.exe'''' -Force; Copy-Item ''''../profiles'''' ''''./portable-out3/InputBus-win32-x64/resources/core/profiles'''' -Recurse -Force\")",
+      "Bash(find /c/InputBus/ui -name *.png -o -name *.jpg -o -name *.webp)",
+      "Bash(mkdir -p /c/InputBus/ui/src/assets)",
+      "Bash(cp /c/InputBus/ui/assets/ogqCv9G.png /c/InputBus/ui/src/assets/vader4pro.png)",
+      "Bash(find /c/InputBus/ui/src -name *.d.ts)",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''''./portable-v4/InputBus-win32-x64/resources/core'''' | Out-Null; Copy-Item ''''../core/build/Release/rewsd_core.exe'''' ''''./portable-v4/InputBus-win32-x64/resources/core/rewsd_core.exe'''' -Force; Copy-Item ''''../profiles'''' ''''./portable-v4/InputBus-win32-x64/resources/core/profiles'''' -Recurse -Force\")"
+    ],
+    "additionalDirectories": [
+      "C:\\InputBus\\core\\build\\Release",
+      "C:\\InputBus\\ui\\portable-out",
+      "C:\\InputBus\\ui\\portable-out2"
     ]
   }
 }
