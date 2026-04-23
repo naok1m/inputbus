@@ -108,6 +108,14 @@ function createWindow() {
     win.webContents.on('did-fail-load', (_event, code, desc) => {
         win.loadURL(`data:text/html,<h2>InputBus UI load failed</h2><p>code=${code}</p><p>${encodeURIComponent(desc)}</p>`);
     });
+    // Re-send connection state when renderer finishes loading,
+    // so it never misses the 'connected' event fired before the page was ready.
+    win.webContents.on('did-finish-load', () => {
+        win.webContents.send('core-message', {
+            type: 100,
+            payload: { _bridge: true, connected: bridge?.connected ?? false }
+        });
+    });
     bridge = new ipc_bridge_1.CoreBridge();
     bridge.connect();
     bridge.on('connected', () => {
