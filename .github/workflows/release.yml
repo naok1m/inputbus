@@ -25,6 +25,11 @@ jobs:
           cache: npm
           cache-dependency-path: ui/package-lock.json
 
+      - name: Clean stale build caches
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force build/core, core/build, core/build2 -ErrorAction SilentlyContinue
+
       - name: Configure core
         run: cmake -B build/core -S core -G "Visual Studio 17 2022" -A x64
 
