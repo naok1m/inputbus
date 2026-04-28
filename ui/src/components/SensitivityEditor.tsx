@@ -14,10 +14,17 @@ type Field = {
 const BASIC_FIELDS: Field[] = [
   { key: 'sensitivityX',    label: 'Sensitivity X',  min: 0.1, max: 10,   step: 0.1  },
   { key: 'sensitivityY',    label: 'Sensitivity Y',  min: 0.1, max: 10,   step: 0.1  },
+  { key: 'velocityScale',    label: 'Velocity Scale', min: 0.005, max: 0.08, step: 0.001 },
   { key: 'deadzone',        label: 'Deadzone',       min: 0,   max: 0.3,  step: 0.005 },
 ];
 
 const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
+  {
+    title: 'Processor',
+    fields: [
+      { key: 'velocityScale',    label: 'Velocity Scale',   min: 0.005, max: 0.08, step: 0.001 },
+    ],
+  },
   {
     title: 'Mouse DPI',
     fields: [
@@ -220,6 +227,24 @@ export function SensitivityEditor() {
             >Advanced</button>
           </div>
 
+          <div className="processor-toggle">
+            <button
+              className={`processor-toggle-btn ${mouseConfig.velocityMode ? 'active' : ''}`}
+              onClick={() => setMouseConfig({ ...mouseConfig, velocityMode: true })}
+            >
+              Velocity
+            </button>
+            <button
+              className={`processor-toggle-btn ${!mouseConfig.velocityMode ? 'active' : ''}`}
+              onClick={() => setMouseConfig({ ...mouseConfig, velocityMode: false })}
+            >
+              Integrator
+            </button>
+            <span className="processor-toggle-hint">
+              {mouseConfig.velocityMode ? 'direct, tighter aim' : 'legacy accumulate/decay'}
+            </span>
+          </div>
+
           {mode === 'basic' && (
             <div>
               <div className="slider-section">
@@ -245,7 +270,7 @@ export function SensitivityEditor() {
                 <CollapsibleSection
                   key={title}
                   title={title}
-                  defaultOpen={title === 'Mouse DPI' || title === 'Response Curve'}
+                  defaultOpen={title === 'Processor' || title === 'Mouse DPI' || title === 'Response Curve'}
                   badge={title === 'Return to Center' && mouseConfig.decayRate === 0 ? 'DISABLED' : undefined}
                 >
                   {fields.map(field => (
@@ -292,6 +317,12 @@ export function SensitivityEditor() {
         {/* Quick info */}
         <div className="card">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <div className="stat-label">Mode</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                {mouseConfig.velocityMode ? 'Velocity' : 'Integrator'}
+              </div>
+            </div>
             <div>
               <div className="stat-label">DPI</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>

@@ -29,6 +29,11 @@ public:
             if (j.contains("mouse")) {
                 const auto& m = j["mouse"];
 
+                const bool hasExplicitMode = m.contains("velocityMode") || m.contains("mode");
+                if (!hasExplicitMode)           cfg.velocityMode = false;
+                if (m.contains("velocityMode"))     cfg.velocityMode  = m["velocityMode"].get<bool>();
+                if (m.contains("mode"))             cfg.velocityMode  = m["mode"].get<std::string>() != "integrator";
+                if (m.contains("velocityScale"))    cfg.velocityScale = m["velocityScale"].get<float>();
                 if (m.contains("mouseDPI"))        cfg.mouseDPI        = m["mouseDPI"].get<float>();
                 if (m.contains("sensitivity")) {
                     float s = m["sensitivity"].get<float>();

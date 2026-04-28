@@ -235,6 +235,9 @@ int main() {
                         auto j = json::parse(payload);
                         AnalogCurveConfig cfg{};
 
+                        if (j.contains("velocityMode"))     cfg.velocityMode  = j["velocityMode"];
+                        if (j.contains("mode"))             cfg.velocityMode  = j["mode"].get<std::string>() != "integrator";
+                        if (j.contains("velocityScale"))    cfg.velocityScale = j["velocityScale"];
                         if (j.contains("mouseDPI"))        cfg.mouseDPI        = j["mouseDPI"];
                         if (j.contains("sensitivityX"))    cfg.sensitivityX    = j["sensitivityX"];
                         if (j.contains("sensitivityY"))    cfg.sensitivityY    = j["sensitivityY"];

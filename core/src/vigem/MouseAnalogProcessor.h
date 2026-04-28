@@ -26,6 +26,13 @@ static constexpr int MAX_ACCEL_POINTS = 8;
 // ============================================================================
 
 struct AnalogCurveConfig {
+    // --- Processing mode ---
+    // Velocity maps each tick's mouse velocity directly to stick deflection.
+    // It feels tighter and more predictable for FPS aim. Integrator preserves
+    // the older accumulate-and-decay behavior for legacy profiles.
+    bool  velocityMode     = true;
+    float velocityScale    = 0.025f;
+
     // --- DPI normalization ---
     // All deltas are scaled by (referenceDPI / mouseDPI) so sensitivity
     // settings feel identical regardless of hardware DPI.
@@ -111,6 +118,7 @@ public:
         float magnitude;
         float timeSinceLastInput;     // ms
         bool  isDecaying;
+        bool  velocityMode;
     };
 
     DebugState GetDebugState() const;

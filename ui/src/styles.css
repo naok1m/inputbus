@@ -1247,6 +1247,47 @@ input[type=range]:focus::-webkit-slider-thumb {
   font-weight: 600;
 }
 
+.processor-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--space-md);
+  padding: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+}
+
+.processor-toggle-btn {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.processor-toggle-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.processor-toggle-btn.active {
+  color: var(--green);
+  background: var(--green-muted);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.processor-toggle-hint {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
 /* Collapsible section */
 .collapsible-header {
   display: flex;
