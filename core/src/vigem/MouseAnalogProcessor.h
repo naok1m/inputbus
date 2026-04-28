@@ -8,6 +8,7 @@
 #include <chrono>
 #include <mutex>
 #include <array>
+#include <atomic>
 
 // ============================================================================
 // ACCELERATION CURVE — piecewise linear, up to 8 control points

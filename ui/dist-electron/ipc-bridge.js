@@ -46,6 +46,9 @@ class CoreBridge extends events_1.EventEmitter {
         this.reconnectTimer = null;
         this.recvBuffer = Buffer.alloc(0);
     }
+    get isConnected() {
+        return this.connected;
+    }
     connect() {
         if (this.socket)
             return;

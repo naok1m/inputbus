@@ -91,7 +91,7 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('core-message', {
       type: 100,
-      payload: { _bridge: true, connected: bridge?.connected ?? false }
+      payload: { _bridge: true, connected: bridge?.isConnected ?? false }
     });
   });
 
