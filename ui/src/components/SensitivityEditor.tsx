@@ -14,7 +14,7 @@ type Field = {
 const BASIC_FIELDS: Field[] = [
   { key: 'sensitivityX',    label: 'Sensitivity X',  min: 0.1, max: 10,   step: 0.1  },
   { key: 'sensitivityY',    label: 'Sensitivity Y',  min: 0.1, max: 10,   step: 0.1  },
-  { key: 'velocityScale',    label: 'Velocity Scale', min: 0.005, max: 0.08, step: 0.001 },
+  { key: 'velocityScale',    label: 'Velocity Scale', min: 0.004, max: 0.05, step: 0.001 },
   { key: 'deadzone',        label: 'Deadzone',       min: 0,   max: 0.3,  step: 0.005 },
 ];
 
@@ -22,7 +22,8 @@ const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
   {
     title: 'Processor',
     fields: [
-      { key: 'velocityScale',    label: 'Velocity Scale',   min: 0.005, max: 0.08, step: 0.001 },
+      { key: 'velocityScale',     label: 'Velocity Scale',   min: 0.004, max: 0.05, step: 0.001 },
+      { key: 'velocityReleaseMs', label: 'Velocity Hold',    min: 0,     max: 16,   step: 1, unit: 'ms' },
     ],
   },
   {
@@ -177,7 +178,7 @@ function AccelCurveEditor({ curve, onChange }: {
 
 // ── Slider Row ──
 function SliderField({ field, value, onChange }: { field: Field; value: number; onChange: (v: number) => void }) {
-  const isOff = (field.key === 'decayRate' || field.key === 'smoothingFactor' || field.key === 'maxStepPerFrame' || field.key === 'antiDeadzone') && value === 0;
+  const isOff = (field.key === 'decayRate' || field.key === 'smoothingFactor' || field.key === 'maxStepPerFrame' || field.key === 'antiDeadzone' || field.key === 'velocityReleaseMs') && value === 0;
   return (
     <div className="slider-row">
       <span className="slider-label">{field.label}</span>

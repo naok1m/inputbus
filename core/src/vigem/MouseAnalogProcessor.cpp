@@ -175,6 +175,7 @@ void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
         if (m_cfg.velocityMode) {
             m_stickX = stepX;
             m_stickY = stepY;
+            m_velocityIdleTime = 0.0f;
         } else {
             m_stickX += stepX;
             m_stickY += stepY;
@@ -185,8 +186,16 @@ void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
         m_debugState.mouseSpeed = 0.0f;
         m_debugState.accelMultiplier = 0.0f;
         if (m_cfg.velocityMode) {
-            m_stickX = 0.0f;
-            m_stickY = 0.0f;
+            m_velocityIdleTime += dt;
+            const float releaseSeconds = m_cfg.velocityReleaseMs / 1000.0f;
+            if (releaseSeconds <= EPSILON || m_velocityIdleTime >= releaseSeconds) {
+                m_stickX = 0.0f;
+                m_stickY = 0.0f;
+            } else {
+                const float release = std::exp(-dt / std::max(releaseSeconds * 0.35f, EPSILON));
+                m_stickX *= release;
+                m_stickY *= release;
+            }
         }
     }
 
@@ -307,6 +316,7 @@ void MouseAnalogProcessor::Reset() {
     m_stickX  = m_stickY  = 0.0f;
     m_smoothedX = m_smoothedY = 0.0f;
     m_idleTime = 0.0f;
+    m_velocityIdleTime = 0.0f;
     std::memset(&m_debugState, 0, sizeof(m_debugState));
 }
 
@@ -315,6 +325,7 @@ void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
     m_cfg = cfg;
 
     m_cfg.velocityScale    = std::clamp(m_cfg.velocityScale,    0.001f, 0.2f);
+    m_cfg.velocityReleaseMs = std::clamp(m_cfg.velocityReleaseMs, 0.0f, 25.0f);
     m_cfg.mouseDPI        = std::clamp(m_cfg.mouseDPI,      100.0f, 16000.0f);
     m_cfg.sensitivityX    = std::clamp(m_cfg.sensitivityX,    0.1f,  20.0f);
     m_cfg.sensitivityY    = std::clamp(m_cfg.sensitivityY,    0.1f,  20.0f);

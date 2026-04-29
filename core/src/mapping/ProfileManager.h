@@ -34,6 +34,7 @@ public:
                 if (m.contains("velocityMode"))     cfg.velocityMode  = m["velocityMode"].get<bool>();
                 if (m.contains("mode"))             cfg.velocityMode  = m["mode"].get<std::string>() != "integrator";
                 if (m.contains("velocityScale"))    cfg.velocityScale = m["velocityScale"].get<float>();
+                if (m.contains("velocityReleaseMs")) cfg.velocityReleaseMs = m["velocityReleaseMs"].get<float>();
                 if (m.contains("mouseDPI"))        cfg.mouseDPI        = m["mouseDPI"].get<float>();
                 if (m.contains("sensitivity")) {
                     float s = m["sensitivity"].get<float>();

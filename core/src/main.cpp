@@ -238,6 +238,7 @@ int main() {
                         if (j.contains("velocityMode"))     cfg.velocityMode  = j["velocityMode"];
                         if (j.contains("mode"))             cfg.velocityMode  = j["mode"].get<std::string>() != "integrator";
                         if (j.contains("velocityScale"))    cfg.velocityScale = j["velocityScale"];
+                        if (j.contains("velocityReleaseMs")) cfg.velocityReleaseMs = j["velocityReleaseMs"];
                         if (j.contains("mouseDPI"))        cfg.mouseDPI        = j["mouseDPI"];
                         if (j.contains("sensitivityX"))    cfg.sensitivityX    = j["sensitivityX"];
                         if (j.contains("sensitivityY"))    cfg.sensitivityY    = j["sensitivityY"];

@@ -132,6 +132,7 @@ export interface MouseConfig {
   // Processing mode: velocity is direct and low-latency; integrator keeps the legacy accumulate/decay feel.
   velocityMode:     boolean;
   velocityScale:    number;
+  velocityReleaseMs: number;
   // DPI normalization: deltas are scaled by (800 / mouseDPI) so configs
   // feel identical regardless of hardware DPI
   mouseDPI:        number;
@@ -161,7 +162,8 @@ export interface MouseConfig {
 
 const DEFAULT_CONFIG: MouseConfig = {
   velocityMode:     true,
-  velocityScale:    0.025,
+  velocityScale:    0.012,
+  velocityReleaseMs: 8,
   mouseDPI:        800,
   sensitivityX:    1.0,
   sensitivityY:    1.0,
@@ -180,7 +182,8 @@ const DEFAULT_CONFIG: MouseConfig = {
 
 const WARZONE_CONFIG: MouseConfig = {
   velocityMode:     true,
-  velocityScale:    0.025,
+  velocityScale:    0.012,
+  velocityReleaseMs: 8,
   mouseDPI:        800,
   sensitivityX:    3.5,
   sensitivityY:    3.5,
@@ -557,7 +560,8 @@ export const useBindingStore = create<MappingStore>()(
           // Ensure new fields exist
           if (state.mouseConfig.mouseDPI == null) state.mouseConfig.mouseDPI = 800;
           if (state.mouseConfig.velocityMode == null) state.mouseConfig.velocityMode = true;
-          if (state.mouseConfig.velocityScale == null) state.mouseConfig.velocityScale = 0.025;
+          if (state.mouseConfig.velocityScale == null) state.mouseConfig.velocityScale = 0.012;
+          if (state.mouseConfig.velocityReleaseMs == null) state.mouseConfig.velocityReleaseMs = 8;
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;

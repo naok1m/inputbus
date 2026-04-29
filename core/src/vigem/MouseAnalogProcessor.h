@@ -31,7 +31,11 @@ struct AnalogCurveConfig {
     // It feels tighter and more predictable for FPS aim. Integrator preserves
     // the older accumulate-and-decay behavior for legacy profiles.
     bool  velocityMode     = true;
-    float velocityScale    = 0.025f;
+    float velocityScale    = 0.012f;
+    // How long the last velocity sample is kept while waiting for the next raw
+    // mouse packet. This prevents 1000 Hz update ticks from zeroing the stick
+    // between 500/1000 Hz mouse reports.
+    float velocityReleaseMs = 8.0f;
 
     // --- DPI normalization ---
     // All deltas are scaled by (referenceDPI / mouseDPI) so sensitivity
@@ -141,6 +145,7 @@ private:
     float m_smoothedY = 0.0f;
 
     float m_idleTime = 0.0f;
+    float m_velocityIdleTime = 0.0f;
 
     mutable DebugState m_debugState{};
 };
