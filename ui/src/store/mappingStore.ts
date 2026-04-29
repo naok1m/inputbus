@@ -154,7 +154,7 @@ export interface MouseConfig {
   jitterThreshold: number;
   // Decay: how long stick holds position after mouse stops
   decayDelay:      number;  // ms before decay starts
-  decayRate:       number;  // exponential decay rate (0 = never returns)
+  decayRate:       number;  // exponential decay rate (higher = drier/faster return)
   decayMinStick:   number;  // floor magnitude: decay stops below this
   // Anti-deadzone: ensures output starts above game's internal deadzone
   antiDeadzone:    number;  // 0 = disabled, typical: 0.02–0.10

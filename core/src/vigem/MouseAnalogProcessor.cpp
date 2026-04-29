@@ -336,7 +336,7 @@ void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
     m_cfg.maxStepPerFrame = std::clamp(m_cfg.maxStepPerFrame, 0.0f,   1.0f);
     m_cfg.jitterThreshold = std::clamp(m_cfg.jitterThreshold, 0.0f,   5.0f);
     m_cfg.decayDelay      = std::clamp(m_cfg.decayDelay,      0.0f, 2000.0f);
-    m_cfg.decayRate       = std::clamp(m_cfg.decayRate,       0.0f,  20.0f);
+    m_cfg.decayRate       = std::clamp(m_cfg.decayRate,       0.0f, 120.0f);
     m_cfg.decayMinStick   = std::clamp(m_cfg.decayMinStick,   0.0f,   0.5f);
     m_cfg.accelPointCount = std::clamp(m_cfg.accelPointCount, 0, MAX_ACCEL_POINTS);
     m_cfg.antiDeadzone    = std::clamp(m_cfg.antiDeadzone,    0.0f, 0.3f);

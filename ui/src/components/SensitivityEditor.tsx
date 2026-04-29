@@ -51,7 +51,7 @@ const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
     title: 'Return to Center',
     fields: [
       { key: 'decayDelay',      label: 'Decay Delay',       min: 0,   max: 2000,  step: 10,   unit: 'ms' },
-      { key: 'decayRate',       label: 'Decay Speed',       min: 0,   max: 20,   step: 0.1  },
+      { key: 'decayRate',       label: 'Decay Speed',       min: 0,   max: 120,  step: 1  },
       { key: 'decayMinStick',   label: 'Hold Floor',        min: 0,   max: 0.5,  step: 0.01 },
     ],
   },
@@ -237,12 +237,20 @@ export function SensitivityEditor() {
             </button>
             <button
               className={`processor-toggle-btn ${!mouseConfig.velocityMode ? 'active' : ''}`}
-              onClick={() => setMouseConfig({ ...mouseConfig, velocityMode: false })}
+              onClick={() => setMouseConfig({
+                ...mouseConfig,
+                velocityMode: false,
+                decayDelay: 0,
+                decayRate: Math.max(mouseConfig.decayRate, 70),
+                decayMinStick: 0,
+                smoothingFactor: 0,
+                maxStepPerFrame: 0,
+              })}
             >
-              Integrator
+              Integrator Dry
             </button>
             <span className="processor-toggle-hint">
-              {mouseConfig.velocityMode ? 'direct, tighter aim' : 'legacy accumulate/decay'}
+              {mouseConfig.velocityMode ? 'direct, tighter aim' : 'stable, linearized decay'}
             </span>
           </div>
 
@@ -321,7 +329,7 @@ export function SensitivityEditor() {
             <div>
               <div className="stat-label">Mode</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                {mouseConfig.velocityMode ? 'Velocity' : 'Integrator'}
+                {mouseConfig.velocityMode ? 'Velocity' : 'Integrator Dry'}
               </div>
             </div>
             <div>
