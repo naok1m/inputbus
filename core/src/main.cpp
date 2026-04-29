@@ -130,6 +130,11 @@ static void EnableMouseBlock() {
 
 // Disables mouse blocking: release clip + show cursor
 static void DisableMouseBlock() {
+    if (g_mouseHook) {
+        UnhookWindowsHookEx(g_mouseHook);
+        g_mouseHook = nullptr;
+        std::cout << "[Cursor] Mouse hook removed\n";
+    }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
 }
@@ -230,6 +235,10 @@ int main() {
                         auto j = json::parse(payload);
                         AnalogCurveConfig cfg{};
 
+                        if (j.contains("velocityMode"))     cfg.velocityMode  = j["velocityMode"];
+                        if (j.contains("mode"))             cfg.velocityMode  = j["mode"].get<std::string>() != "integrator";
+                        if (j.contains("velocityScale"))    cfg.velocityScale = j["velocityScale"];
+                        if (j.contains("velocityReleaseMs")) cfg.velocityReleaseMs = j["velocityReleaseMs"];
                         if (j.contains("mouseDPI"))        cfg.mouseDPI        = j["mouseDPI"];
                         if (j.contains("sensitivityX"))    cfg.sensitivityX    = j["sensitivityX"];
                         if (j.contains("sensitivityY"))    cfg.sensitivityY    = j["sensitivityY"];
@@ -293,16 +302,10 @@ int main() {
                         bool en = j.is_boolean() ? j.get<bool>() : j.value("enabled", false);
                         g_captureEnabled.store(en);
 
-                        // ClipCursor works from any thread; hook checks g_captureEnabled
-                        if (en) {
-                            int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
-                            int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
-                            SetCursorPos(cx, cy);
-                            RECT r = { cx, cy, cx + 1, cy + 1 };
-                            ClipCursor(&r);
-                        } else {
-                            ClipCursor(nullptr);
-                        }
+                        if (en)
+                            EnableMouseBlock();
+                        else
+                            DisableMouseBlock();
 
                         return json{{"ok", true}, {"captureEnabled", en}}.dump();
                     } catch (...) {
@@ -459,9 +462,15 @@ int main() {
             // Auto-ADS state
             bool  adsRmbWasDown = false;
             bool  adsToggled = false;
+            bool  adsMacroHolding = false;
 
             // Auto-sprint state (left-stick click = LS = 0x0040)
             // Engages LS when left stick is pushed forward
+            bool  sprintApplied = false;
+            constexpr uint16_t LS_BUTTON = 0x0040;
+
+            // Tab scoreboard state
+            bool  tabScoreApplied = false;
 
             // Bunny-hop state
             float bhTimer = 0.0f;
@@ -513,10 +522,16 @@ int main() {
                             }
                         } else {
                             pingTimer = 0.0f;
+                            if (pingHolding) {
+                                g_gamepadState.buttons &= ~static_cast<uint16_t>(g_autoPingButton.load());
+                            }
                             pingHolding = false;
                         }
                     } else {
                         pingTimer = 0.0f;
+                        if (pingHolding) {
+                            g_gamepadState.buttons &= ~static_cast<uint16_t>(g_autoPingButton.load());
+                        }
                         pingHolding = false;
                     }
 
@@ -542,6 +557,9 @@ int main() {
                         }
                     } else {
                         rfTimer = 0.0f;
+                        if (rfHolding) {
+                            g_gamepadState.buttons &= ~static_cast<uint16_t>(g_rapidFireButton.load());
+                        }
                         rfHolding = false;
                     }
 
@@ -619,7 +637,14 @@ int main() {
                     if (g_tabScoreEnabled.load() && g_captureEnabled.load()) {
                         if (GetAsyncKeyState(VK_TAB) & 0x8000) {
                             g_gamepadState.buttons |= 0x0020; // Back/Select
+                            tabScoreApplied = true;
+                        } else if (tabScoreApplied) {
+                            g_gamepadState.buttons &= ~0x0020;
+                            tabScoreApplied = false;
                         }
+                    } else if (tabScoreApplied) {
+                        g_gamepadState.buttons &= ~0x0020;
+                        tabScoreApplied = false;
                     }
 
                     // ── No-recoil — pull right stick down while firing (RT > 0) ──
@@ -677,18 +702,32 @@ int main() {
                         if (adsToggled && !rmbDown) {
                             // Keep LT held even after RMB released (toggle behavior)
                             g_gamepadState.leftTrigger = 255;
+                            adsMacroHolding = true;
+                        } else {
+                            adsMacroHolding = false;
                         }
                     } else {
+                        if (adsMacroHolding) {
+                            g_gamepadState.leftTrigger = 0;
+                        }
                         adsRmbWasDown = false;
                         adsToggled = false;
+                        adsMacroHolding = false;
                     }
 
                     // ── Auto-sprint — hold LS when left stick pushed forward ──
                     if (g_autoSprintEnabled.load() && g_captureEnabled.load()) {
                         // If left stick Y is pushed forward (positive = up), press LS (0x0040)
                         if (g_gamepadState.thumbLY > 8000) {
-                            g_gamepadState.buttons |= 0x0040; // Left Stick click
+                            g_gamepadState.buttons |= LS_BUTTON; // Left Stick click
+                            sprintApplied = true;
+                        } else if (sprintApplied) {
+                            g_gamepadState.buttons &= ~LS_BUTTON;
+                            sprintApplied = false;
                         }
+                    } else if (sprintApplied) {
+                        g_gamepadState.buttons &= ~LS_BUTTON;
+                        sprintApplied = false;
                     }
 
                     // ── Bunny-hop — timed A-button loop while Space held ──
@@ -715,10 +754,16 @@ int main() {
                             }
                         } else {
                             bhTimer = 0.0f;
+                            if (bhHolding) {
+                                g_gamepadState.buttons &= ~static_cast<uint16_t>(g_bunnyHopButton.load());
+                            }
                             bhHolding = false;
                         }
                     } else {
                         bhTimer = 0.0f;
+                        if (bhHolding) {
+                            g_gamepadState.buttons &= ~static_cast<uint16_t>(g_bunnyHopButton.load());
+                        }
                         bhHolding = false;
                     }
 
@@ -746,10 +791,16 @@ int main() {
                             }
                         } else {
                             alTimer = 0.0f;
+                            if (alHolding) {
+                                g_gamepadState.buttons &= ~static_cast<uint16_t>(g_autoLootButton.load());
+                            }
                             alHolding = false;
                         }
                     } else {
                         alTimer = 0.0f;
+                        if (alHolding) {
+                            g_gamepadState.buttons &= ~static_cast<uint16_t>(g_autoLootButton.load());
+                        }
                         alHolding = false;
                     }
 

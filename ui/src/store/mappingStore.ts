@@ -129,6 +129,10 @@ const DEFAULT_MACROS: MacroDef[] = [
 ];
 
 export interface MouseConfig {
+  // Processing mode: velocity is direct and low-latency; integrator keeps the legacy accumulate/decay feel.
+  velocityMode:     boolean;
+  velocityScale:    number;
+  velocityReleaseMs: number;
   // DPI normalization: deltas are scaled by (800 / mouseDPI) so configs
   // feel identical regardless of hardware DPI
   mouseDPI:        number;
@@ -150,13 +154,16 @@ export interface MouseConfig {
   jitterThreshold: number;
   // Decay: how long stick holds position after mouse stops
   decayDelay:      number;  // ms before decay starts
-  decayRate:       number;  // exponential decay rate (0 = never returns)
+  decayRate:       number;  // exponential decay rate (higher = drier/faster return)
   decayMinStick:   number;  // floor magnitude: decay stops below this
   // Anti-deadzone: ensures output starts above game's internal deadzone
   antiDeadzone:    number;  // 0 = disabled, typical: 0.02–0.10
 }
 
 const DEFAULT_CONFIG: MouseConfig = {
+  velocityMode:     true,
+  velocityScale:    0.012,
+  velocityReleaseMs: 8,
   mouseDPI:        800,
   sensitivityX:    1.0,
   sensitivityY:    1.0,
@@ -174,6 +181,9 @@ const DEFAULT_CONFIG: MouseConfig = {
 };
 
 const WARZONE_CONFIG: MouseConfig = {
+  velocityMode:     true,
+  velocityScale:    0.012,
+  velocityReleaseMs: 8,
   mouseDPI:        800,
   sensitivityX:    3.5,
   sensitivityY:    3.5,
@@ -549,6 +559,9 @@ export const useBindingStore = create<MappingStore>()(
           }
           // Ensure new fields exist
           if (state.mouseConfig.mouseDPI == null) state.mouseConfig.mouseDPI = 800;
+          if (state.mouseConfig.velocityMode == null) state.mouseConfig.velocityMode = true;
+          if (state.mouseConfig.velocityScale == null) state.mouseConfig.velocityScale = 0.012;
+          if (state.mouseConfig.velocityReleaseMs == null) state.mouseConfig.velocityReleaseMs = 8;
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;

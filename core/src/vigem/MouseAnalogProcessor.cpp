@@ -63,8 +63,11 @@ float MouseAnalogProcessor::EvalAccelCurve(float speed) const {
 void MouseAnalogProcessor::AddDelta(float dx, float dy) {
     std::lock_guard lock(m_mutex);
 
-    if (std::abs(dx) < m_cfg.jitterThreshold) dx = 0.0f;
-    if (std::abs(dy) < m_cfg.jitterThreshold) dy = 0.0f;
+    const float deltaMag = std::sqrt(dx * dx + dy * dy);
+    if (deltaMag < m_cfg.jitterThreshold) {
+        dx = 0.0f;
+        dy = 0.0f;
+    }
 
     if (std::abs(dx) > EPSILON || std::abs(dy) > EPSILON) {
         m_rawAccX += dx;
@@ -154,25 +157,50 @@ void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
         m_debugState.accelMultiplier = accelMult;
 
         const float sensMult = m_sensMultiplier.load(std::memory_order_relaxed);
-        float stepX = rawX * m_cfg.sensitivityX * sensMult * accelMult * SENSITIVITY_SCALE;
-        float stepY = rawY * m_cfg.sensitivityY * sensMult * accelMult * SENSITIVITY_SCALE;
+        const float scale = m_cfg.velocityMode ? m_cfg.velocityScale : SENSITIVITY_SCALE;
+        float stepX = rawX * m_cfg.sensitivityX * sensMult * accelMult * scale;
+        float stepY = rawY * m_cfg.sensitivityY * sensMult * accelMult * scale;
+
+        if (m_cfg.velocityMode && dtNorm > EPSILON) {
+            stepX /= dtNorm;
+            stepY /= dtNorm;
+        }
 
         if (m_cfg.maxStepPerFrame > EPSILON) {
-            const float maxStep = m_cfg.maxStepPerFrame * dtNorm;
+            const float maxStep = m_cfg.velocityMode ? m_cfg.maxStepPerFrame : (m_cfg.maxStepPerFrame * dtNorm);
             stepX = std::clamp(stepX, -maxStep, maxStep);
             stepY = std::clamp(stepY, -maxStep, maxStep);
         }
 
-        m_stickX += stepX;
-        m_stickY += stepY;
+        if (m_cfg.velocityMode) {
+            m_stickX = stepX;
+            m_stickY = stepY;
+            m_velocityIdleTime = 0.0f;
+        } else {
+            m_stickX += stepX;
+            m_stickY += stepY;
+        }
         m_idleTime = 0.0f;
     } else {
         m_idleTime += dt;
         m_debugState.mouseSpeed = 0.0f;
         m_debugState.accelMultiplier = 0.0f;
+        if (m_cfg.velocityMode) {
+            m_velocityIdleTime += dt;
+            const float releaseSeconds = m_cfg.velocityReleaseMs / 1000.0f;
+            if (releaseSeconds <= EPSILON || m_velocityIdleTime >= releaseSeconds) {
+                m_stickX = 0.0f;
+                m_stickY = 0.0f;
+            } else {
+                const float release = std::exp(-dt / std::max(releaseSeconds * 0.35f, EPSILON));
+                m_stickX *= release;
+                m_stickY *= release;
+            }
+        }
     }
 
     m_debugState.timeSinceLastInput = m_idleTime * 1000.0f;
+    m_debugState.velocityMode = m_cfg.velocityMode;
 
     // ========================================================================
     // 4. CLAMP to unit circle
@@ -288,6 +316,7 @@ void MouseAnalogProcessor::Reset() {
     m_stickX  = m_stickY  = 0.0f;
     m_smoothedX = m_smoothedY = 0.0f;
     m_idleTime = 0.0f;
+    m_velocityIdleTime = 0.0f;
     std::memset(&m_debugState, 0, sizeof(m_debugState));
 }
 
@@ -295,6 +324,8 @@ void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
     std::lock_guard lock(m_mutex);
     m_cfg = cfg;
 
+    m_cfg.velocityScale    = std::clamp(m_cfg.velocityScale,    0.001f, 0.2f);
+    m_cfg.velocityReleaseMs = std::clamp(m_cfg.velocityReleaseMs, 0.0f, 25.0f);
     m_cfg.mouseDPI        = std::clamp(m_cfg.mouseDPI,      100.0f, 16000.0f);
     m_cfg.sensitivityX    = std::clamp(m_cfg.sensitivityX,    0.1f,  20.0f);
     m_cfg.sensitivityY    = std::clamp(m_cfg.sensitivityY,    0.1f,  20.0f);
@@ -305,7 +336,7 @@ void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
     m_cfg.maxStepPerFrame = std::clamp(m_cfg.maxStepPerFrame, 0.0f,   1.0f);
     m_cfg.jitterThreshold = std::clamp(m_cfg.jitterThreshold, 0.0f,   5.0f);
     m_cfg.decayDelay      = std::clamp(m_cfg.decayDelay,      0.0f, 2000.0f);
-    m_cfg.decayRate       = std::clamp(m_cfg.decayRate,       0.0f,  20.0f);
+    m_cfg.decayRate       = std::clamp(m_cfg.decayRate,       0.0f, 120.0f);
     m_cfg.decayMinStick   = std::clamp(m_cfg.decayMinStick,   0.0f,   0.5f);
     m_cfg.accelPointCount = std::clamp(m_cfg.accelPointCount, 0, MAX_ACCEL_POINTS);
     m_cfg.antiDeadzone    = std::clamp(m_cfg.antiDeadzone,    0.0f, 0.3f);

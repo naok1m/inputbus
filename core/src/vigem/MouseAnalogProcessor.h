@@ -8,6 +8,7 @@
 #include <chrono>
 #include <mutex>
 #include <array>
+#include <atomic>
 
 // ============================================================================
 // ACCELERATION CURVE — piecewise linear, up to 8 control points
@@ -25,6 +26,17 @@ static constexpr int MAX_ACCEL_POINTS = 8;
 // ============================================================================
 
 struct AnalogCurveConfig {
+    // --- Processing mode ---
+    // Velocity maps each tick's mouse velocity directly to stick deflection.
+    // It feels tighter and more predictable for FPS aim. Integrator preserves
+    // the older accumulate-and-decay behavior for legacy profiles.
+    bool  velocityMode     = true;
+    float velocityScale    = 0.012f;
+    // How long the last velocity sample is kept while waiting for the next raw
+    // mouse packet. This prevents 1000 Hz update ticks from zeroing the stick
+    // between 500/1000 Hz mouse reports.
+    float velocityReleaseMs = 8.0f;
+
     // --- DPI normalization ---
     // All deltas are scaled by (referenceDPI / mouseDPI) so sensitivity
     // settings feel identical regardless of hardware DPI.
@@ -110,6 +122,7 @@ public:
         float magnitude;
         float timeSinceLastInput;     // ms
         bool  isDecaying;
+        bool  velocityMode;
     };
 
     DebugState GetDebugState() const;
@@ -132,6 +145,7 @@ private:
     float m_smoothedY = 0.0f;
 
     float m_idleTime = 0.0f;
+    float m_velocityIdleTime = 0.0f;
 
     mutable DebugState m_debugState{};
 };

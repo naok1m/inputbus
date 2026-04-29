@@ -16,11 +16,13 @@ static bool ReadFull(HANDLE pipe, void* buf, DWORD size, OVERLAPPED& ov) {
         BOOL ok = ReadFile(pipe, static_cast<char*>(buf) + totalRead,
                            size - totalRead, &read, &ov);
         if (ok) {
+            if (read == 0) return false;
             totalRead += read;
             continue;
         }
         if (GetLastError() != ERROR_IO_PENDING) return false;
         if (!GetOverlappedResult(pipe, &ov, &read, TRUE)) return false;
+        if (read == 0) return false;
         totalRead += read;
     }
     return true;

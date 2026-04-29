@@ -14,10 +14,18 @@ type Field = {
 const BASIC_FIELDS: Field[] = [
   { key: 'sensitivityX',    label: 'Sensitivity X',  min: 0.1, max: 10,   step: 0.1  },
   { key: 'sensitivityY',    label: 'Sensitivity Y',  min: 0.1, max: 10,   step: 0.1  },
+  { key: 'velocityScale',    label: 'Velocity Scale', min: 0.004, max: 0.05, step: 0.001 },
   { key: 'deadzone',        label: 'Deadzone',       min: 0,   max: 0.3,  step: 0.005 },
 ];
 
 const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
+  {
+    title: 'Processor',
+    fields: [
+      { key: 'velocityScale',     label: 'Velocity Scale',   min: 0.004, max: 0.05, step: 0.001 },
+      { key: 'velocityReleaseMs', label: 'Velocity Hold',    min: 0,     max: 16,   step: 1, unit: 'ms' },
+    ],
+  },
   {
     title: 'Mouse DPI',
     fields: [
@@ -43,7 +51,7 @@ const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
     title: 'Return to Center',
     fields: [
       { key: 'decayDelay',      label: 'Decay Delay',       min: 0,   max: 2000,  step: 10,   unit: 'ms' },
-      { key: 'decayRate',       label: 'Decay Speed',       min: 0,   max: 20,   step: 0.1  },
+      { key: 'decayRate',       label: 'Decay Speed',       min: 0,   max: 120,  step: 1  },
       { key: 'decayMinStick',   label: 'Hold Floor',        min: 0,   max: 0.5,  step: 0.01 },
     ],
   },
@@ -170,7 +178,7 @@ function AccelCurveEditor({ curve, onChange }: {
 
 // ── Slider Row ──
 function SliderField({ field, value, onChange }: { field: Field; value: number; onChange: (v: number) => void }) {
-  const isOff = (field.key === 'decayRate' || field.key === 'smoothingFactor' || field.key === 'maxStepPerFrame' || field.key === 'antiDeadzone') && value === 0;
+  const isOff = (field.key === 'decayRate' || field.key === 'smoothingFactor' || field.key === 'maxStepPerFrame' || field.key === 'antiDeadzone' || field.key === 'velocityReleaseMs') && value === 0;
   return (
     <div className="slider-row">
       <span className="slider-label">{field.label}</span>
@@ -220,6 +228,32 @@ export function SensitivityEditor() {
             >Advanced</button>
           </div>
 
+          <div className="processor-toggle">
+            <button
+              className={`processor-toggle-btn ${mouseConfig.velocityMode ? 'active' : ''}`}
+              onClick={() => setMouseConfig({ ...mouseConfig, velocityMode: true })}
+            >
+              Velocity
+            </button>
+            <button
+              className={`processor-toggle-btn ${!mouseConfig.velocityMode ? 'active' : ''}`}
+              onClick={() => setMouseConfig({
+                ...mouseConfig,
+                velocityMode: false,
+                decayDelay: 0,
+                decayRate: Math.max(mouseConfig.decayRate, 70),
+                decayMinStick: 0,
+                smoothingFactor: 0,
+                maxStepPerFrame: 0,
+              })}
+            >
+              Integrator Dry
+            </button>
+            <span className="processor-toggle-hint">
+              {mouseConfig.velocityMode ? 'direct, tighter aim' : 'stable, linearized decay'}
+            </span>
+          </div>
+
           {mode === 'basic' && (
             <div>
               <div className="slider-section">
@@ -245,7 +279,7 @@ export function SensitivityEditor() {
                 <CollapsibleSection
                   key={title}
                   title={title}
-                  defaultOpen={title === 'Mouse DPI' || title === 'Response Curve'}
+                  defaultOpen={title === 'Processor' || title === 'Mouse DPI' || title === 'Response Curve'}
                   badge={title === 'Return to Center' && mouseConfig.decayRate === 0 ? 'DISABLED' : undefined}
                 >
                   {fields.map(field => (
@@ -292,6 +326,12 @@ export function SensitivityEditor() {
         {/* Quick info */}
         <div className="card">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <div className="stat-label">Mode</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                {mouseConfig.velocityMode ? 'Velocity' : 'Integrator Dry'}
+              </div>
+            </div>
             <div>
               <div className="stat-label">DPI</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>

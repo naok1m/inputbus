@@ -6,7 +6,6 @@ import { KeyMapper } from './components/KeyMapper';
 import { MacroGrid } from './components/MacroPanel';
 import GamePresets from './components/GamePresets';
 import { SettingsTab } from './components/SettingsTab';
-import './styles.css';
 
 type Tab = 'overview' | 'presets' | 'analog' | 'mappings' | 'macros' | 'settings';
 
