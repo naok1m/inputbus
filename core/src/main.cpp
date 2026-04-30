@@ -1,9 +1,11 @@
 // main.cpp — InputBus core process
 // Input pipeline: Raw Input API → MappingEngine → MouseAnalogProcessor → ViGEmBus
 #include "input/RawInputHandler_v2.h"
+#include "input/NativeMouseInputService.h"
 #include "vigem/MappingEngine.h"
 #include "mapping/ProfileManager.h"
 #include "vigem/MouseAnalogProcessor.h"
+#include "vigem/MouseCameraProcessor.h"
 #include "vigem/ViGEmManager.h"
 #include "ipc/PipeServer.h"
 
@@ -23,6 +25,9 @@
 static GamepadState        g_gamepadState{};
 static MappingEngine       g_mapper;
 static MouseAnalogProcessor g_mouseProc;
+static MouseCameraProcessor g_mouseCameraProc;
+static NativeMouseInputService g_nativeMouseInput;
+static MouseCameraConfig   g_mouseCameraConfig{};
 static std::mutex          g_stateMutex;
 static std::atomic<bool>   g_captureEnabled{false};
 
@@ -100,6 +105,10 @@ static HHOOK g_mouseHook = nullptr;
 // unaffected — InputBus still receives hardware deltas for analog conversion.
 static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0 && g_captureEnabled.load(std::memory_order_relaxed)) {
+        const auto* info = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
+        if (info && info->dwExtraInfo == NativeMouseInputService::INPUTBUS_MOUSE_EXTRA_INFO) {
+            return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
+        }
         return 1; // eat the message — game never sees it
     }
     return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
@@ -174,7 +183,7 @@ int main() {
         // ====================================================================
 
         ProfileManager profiles;
-        if (profiles.Load("profiles/default.json", g_mapper, g_mouseProc)) {
+        if (profiles.Load("profiles/default.json", g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
             std::cout << "[Profile] Loaded: " << profiles.CurrentName() << "\n";
         } else {
             std::cout << "[Profile] No default profile found — loading hardcoded WASD defaults.\n";
@@ -207,16 +216,16 @@ int main() {
                         else if (j.is_object() && j.contains("profileFile"))
                             file = (std::filesystem::path("profiles") / j["profileFile"].get<std::string>()).string();
 
-                        if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc))
+                        if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc, &g_mouseCameraConfig))
                             return R"({"ok":true})";
-                        if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc))
+                        if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig))
                             return R"({"ok":true})";
                     } catch (...) {}
                     return R"({"ok":false,"error":"invalid profile"})";
                 }
 
                 case MsgType::SetActiveProfile: {
-                    bool ok = profiles.LoadFromJson(payload, g_mapper, g_mouseProc);
+                    bool ok = profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig);
                     std::cout << "[Profile] SetActiveProfile: " << (ok ? "OK" : "FAIL")
                               << " hasW=" << g_mapper.HasKeyBinding(87)
                               << " hasA=" << g_mapper.HasKeyBinding(65) << "\n";
@@ -254,6 +263,14 @@ int main() {
 
                         if (j.contains("antiDeadzone"))    cfg.antiDeadzone    = j["antiDeadzone"];
 
+                        if (j.contains("nativeMouseCameraEnabled")) g_mouseCameraConfig.nativeMouseCameraEnabled = j["nativeMouseCameraEnabled"].get<bool>();
+                        if (j.contains("mouseCameraSensitivityX"))  g_mouseCameraConfig.mouseCameraSensitivityX = j["mouseCameraSensitivityX"].get<float>();
+                        if (j.contains("mouseCameraSensitivityY"))  g_mouseCameraConfig.mouseCameraSensitivityY = j["mouseCameraSensitivityY"].get<float>();
+                        if (j.contains("mouseCameraDeadzone"))      g_mouseCameraConfig.mouseCameraDeadzone = j["mouseCameraDeadzone"].get<float>();
+                        if (j.contains("mouseCameraCurve"))         g_mouseCameraConfig.mouseCameraCurve = j["mouseCameraCurve"].get<float>();
+                        if (j.contains("mouseCameraSmoothing"))     g_mouseCameraConfig.mouseCameraSmoothing = j["mouseCameraSmoothing"].get<float>();
+                        if (j.contains("mouseCameraInvertY"))       g_mouseCameraConfig.mouseCameraInvertY = j["mouseCameraInvertY"].get<bool>();
+
                         if (j.contains("accelCurve") && j["accelCurve"].is_array()) {
                             const auto& arr = j["accelCurve"];
                             cfg.accelPointCount = std::min(static_cast<int>(arr.size()), MAX_ACCEL_POINTS);
@@ -275,6 +292,7 @@ int main() {
                     j["connected"]     = vigem.IsConnected();
                     j["profile"]       = profiles.CurrentName();
                     j["captureEnabled"] = g_captureEnabled.load();
+                    j["nativeMouseCameraEnabled"] = g_mouseCameraConfig.nativeMouseCameraEnabled;
 
                     auto dbg = g_mouseProc.GetDebugState();
                     j["debug"]["stickX"]    = dbg.stickX;
@@ -301,6 +319,7 @@ int main() {
                             RECT r = { cx, cy, cx + 1, cy + 1 };
                             ClipCursor(&r);
                         } else {
+                            g_mouseCameraProc.Reset();
                             ClipCursor(nullptr);
                         }
 
@@ -486,8 +505,25 @@ int main() {
 
                     int16_t rx = 0, ry = 0;
                     g_mouseProc.Tick(dt, rx, ry);
-                    g_gamepadState.thumbRX = rx;
-                    g_gamepadState.thumbRY = ry;
+                    const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled;
+                    if (nativeMouseCameraEnabled) {
+                        g_gamepadState.thumbRX = 0;
+                        g_gamepadState.thumbRY = 0;
+                        if (g_captureEnabled.load()) {
+                            const float cameraX = static_cast<float>(rx) / 32767.0f;
+                            const float cameraY = static_cast<float>(-ry) / 32767.0f;
+                            const MouseDelta mouseDelta = g_mouseCameraProc.Process(cameraX, cameraY, dt, g_mouseCameraConfig);
+                            if (!mouseDelta.IsZero()) {
+                                g_nativeMouseInput.SendMouse(mouseDelta);
+                            }
+                        } else {
+                            g_mouseCameraProc.Reset();
+                        }
+                    } else {
+                        g_mouseCameraProc.Reset();
+                        g_gamepadState.thumbRX = rx;
+                        g_gamepadState.thumbRY = ry;
+                    }
 
                     // Auto-ping macro — while ADS (LT held), press D-Up on interval
                     if (g_autoPingEnabled.load() && g_captureEnabled.load()) {
@@ -753,6 +789,11 @@ int main() {
                         alHolding = false;
                     }
 
+                    if (g_mouseCameraConfig.nativeMouseCameraEnabled) {
+                        g_gamepadState.thumbRX = 0;
+                        g_gamepadState.thumbRY = 0;
+                    }
+
                     vigem.UpdateState(g_gamepadState);
                 }
 
@@ -820,8 +861,11 @@ int main() {
 
                         if (next)
                             EnableMouseBlock();
-                        else
+                        else {
+                            std::lock_guard lock(g_stateMutex);
+                            g_mouseCameraProc.Reset();
                             DisableMouseBlock();
+                        }
 
                         return false;
                     }

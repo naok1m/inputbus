@@ -8,9 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CORE_SOURCES
 	src/main.cpp
+	src/input/NativeMouseInputService.cpp
 	src/input/RawInputHandler_v2.cpp
 	src/ipc/PipeServer.cpp
 	src/vigem/MappingEngine.cpp
+	src/vigem/MouseCameraProcessor.cpp
 	src/vigem/MouseAnalogProcessor.cpp
 	src/vigem/ViGEmManager.cpp
 )

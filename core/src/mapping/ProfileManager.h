@@ -2,6 +2,7 @@
 
 #include "../vigem/MappingEngine.h"
 #include "../vigem/MouseAnalogProcessor.h"
+#include "../vigem/MouseCameraProcessor.h"
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <fstream>
@@ -10,15 +11,15 @@
 
 class ProfileManager {
 public:
-    bool Load(const std::string& path, MappingEngine& mapper, MouseAnalogProcessor& mouseProc) {
+    bool Load(const std::string& path, MappingEngine& mapper, MouseAnalogProcessor& mouseProc, MouseCameraConfig* mouseCamera = nullptr) {
         std::ifstream in(path, std::ios::binary);
         if (!in) return false;
         std::ostringstream ss;
         ss << in.rdbuf();
-        return LoadFromJson(ss.str(), mapper, mouseProc);
+        return LoadFromJson(ss.str(), mapper, mouseProc, mouseCamera);
     }
 
-    bool LoadFromJson(const std::string& jsonPayload, MappingEngine& mapper, MouseAnalogProcessor& mouseProc) {
+    bool LoadFromJson(const std::string& jsonPayload, MappingEngine& mapper, MouseAnalogProcessor& mouseProc, MouseCameraConfig* mouseCamera = nullptr) {
         try {
             using json = nlohmann::json;
             auto j = json::parse(jsonPayload);
@@ -64,6 +65,24 @@ public:
                 }
             }
             mouseProc.UpdateConfig(cfg);
+
+            if (mouseCamera && j.contains("mouseCamera")) {
+                const auto& c = j["mouseCamera"];
+                if (c.contains("nativeMouseCameraEnabled")) mouseCamera->nativeMouseCameraEnabled = c["nativeMouseCameraEnabled"].get<bool>();
+                if (c.contains("enabled"))                  mouseCamera->nativeMouseCameraEnabled = c["enabled"].get<bool>();
+                if (c.contains("mouseCameraSensitivityX"))  mouseCamera->mouseCameraSensitivityX = c["mouseCameraSensitivityX"].get<float>();
+                if (c.contains("mouseCameraSensitivityY"))  mouseCamera->mouseCameraSensitivityY = c["mouseCameraSensitivityY"].get<float>();
+                if (c.contains("sensitivityX"))             mouseCamera->mouseCameraSensitivityX = c["sensitivityX"].get<float>();
+                if (c.contains("sensitivityY"))             mouseCamera->mouseCameraSensitivityY = c["sensitivityY"].get<float>();
+                if (c.contains("mouseCameraDeadzone"))      mouseCamera->mouseCameraDeadzone = c["mouseCameraDeadzone"].get<float>();
+                if (c.contains("deadzone"))                 mouseCamera->mouseCameraDeadzone = c["deadzone"].get<float>();
+                if (c.contains("mouseCameraCurve"))         mouseCamera->mouseCameraCurve = c["mouseCameraCurve"].get<float>();
+                if (c.contains("curve"))                    mouseCamera->mouseCameraCurve = c["curve"].get<float>();
+                if (c.contains("mouseCameraSmoothing"))     mouseCamera->mouseCameraSmoothing = c["mouseCameraSmoothing"].get<float>();
+                if (c.contains("smoothing"))                mouseCamera->mouseCameraSmoothing = c["smoothing"].get<float>();
+                if (c.contains("mouseCameraInvertY"))       mouseCamera->mouseCameraInvertY = c["mouseCameraInvertY"].get<bool>();
+                if (c.contains("invertY"))                  mouseCamera->mouseCameraInvertY = c["invertY"].get<bool>();
+            }
 
             if (j.contains("profileName"))
                 m_currentName = j["profileName"].get<std::string>();

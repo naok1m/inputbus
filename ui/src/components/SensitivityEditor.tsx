@@ -1,4 +1,5 @@
-import { useBindingStore, MouseConfig, AccelPoint } from '../store/mappingStore';
+import { useBindingStore } from '../store/mappingStore';
+import type { AccelPoint, MouseConfig } from '../store/mappingStore';
 import { useState } from 'react';
 import AimCurveGraph from './AimCurveGraph';
 

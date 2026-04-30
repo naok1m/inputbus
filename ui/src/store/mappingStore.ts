@@ -154,6 +154,14 @@ export interface MouseConfig {
   decayMinStick:   number;  // floor magnitude: decay stops below this
   // Anti-deadzone: ensures output starts above game's internal deadzone
   antiDeadzone:    number;  // 0 = disabled, typical: 0.02–0.10
+
+  nativeMouseCameraEnabled: boolean;
+  mouseCameraSensitivityX:  number;
+  mouseCameraSensitivityY:  number;
+  mouseCameraDeadzone:      number;
+  mouseCameraCurve:         number;
+  mouseCameraSmoothing:     number;
+  mouseCameraInvertY:       boolean;
 }
 
 const DEFAULT_CONFIG: MouseConfig = {
@@ -171,6 +179,13 @@ const DEFAULT_CONFIG: MouseConfig = {
   decayRate:       6,
   decayMinStick:   0,
   antiDeadzone:    0,
+  nativeMouseCameraEnabled: false,
+  mouseCameraSensitivityX: 18.0,
+  mouseCameraSensitivityY: 18.0,
+  mouseCameraDeadzone: 0.08,
+  mouseCameraCurve: 1.30,
+  mouseCameraSmoothing: 0.0,
+  mouseCameraInvertY: false,
 };
 
 const WARZONE_CONFIG: MouseConfig = {
@@ -188,6 +203,13 @@ const WARZONE_CONFIG: MouseConfig = {
   decayRate:       20,
   decayMinStick:   0,
   antiDeadzone:    0,
+  nativeMouseCameraEnabled: false,
+  mouseCameraSensitivityX: 18.0,
+  mouseCameraSensitivityY: 18.0,
+  mouseCameraDeadzone: 0.08,
+  mouseCameraCurve: 1.30,
+  mouseCameraSmoothing: 0.0,
+  mouseCameraInvertY: false,
 };
 
 // Warzone keyboard bindings (PC keybinds → Xbox controller)
@@ -241,6 +263,15 @@ const buildProfilePayload = (
   keyBindings: bindings,
   mouseBindings,
   mouse: { ...cfg },
+  mouseCamera: {
+    nativeMouseCameraEnabled: cfg.nativeMouseCameraEnabled,
+    mouseCameraSensitivityX: cfg.mouseCameraSensitivityX,
+    mouseCameraSensitivityY: cfg.mouseCameraSensitivityY,
+    mouseCameraDeadzone: cfg.mouseCameraDeadzone,
+    mouseCameraCurve: cfg.mouseCameraCurve,
+    mouseCameraSmoothing: cfg.mouseCameraSmoothing,
+    mouseCameraInvertY: cfg.mouseCameraInvertY,
+  },
 });
 
 interface MappingStore {
@@ -479,7 +510,7 @@ export const useBindingStore = create<MappingStore>()(
         const data = JSON.parse(raw);
         const resolvedBindings     = data.bindings      ?? data.keyBindings   ?? {};
         const resolvedMouseBindings = data.mouseBindings ?? {};
-        const rawMouse             = data.mouse          ?? data.mouseConfig   ?? {};
+        const rawMouse             = { ...(data.mouse ?? data.mouseConfig ?? {}), ...(data.mouseCamera ?? {}) };
 
         // Migrate legacy fields
         const resolvedMouse: MouseConfig = {
@@ -552,6 +583,13 @@ export const useBindingStore = create<MappingStore>()(
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;
+          if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = false;
+          if (state.mouseConfig.mouseCameraSensitivityX == null) state.mouseConfig.mouseCameraSensitivityX = 18.0;
+          if (state.mouseConfig.mouseCameraSensitivityY == null) state.mouseConfig.mouseCameraSensitivityY = 18.0;
+          if (state.mouseConfig.mouseCameraDeadzone == null) state.mouseConfig.mouseCameraDeadzone = 0.08;
+          if (state.mouseConfig.mouseCameraCurve == null) state.mouseConfig.mouseCameraCurve = 1.30;
+          if (state.mouseConfig.mouseCameraSmoothing == null) state.mouseConfig.mouseCameraSmoothing = 0.0;
+          if (state.mouseConfig.mouseCameraInvertY == null) state.mouseConfig.mouseCameraInvertY = false;
           // Ensure macros array exists with all defaults
           if (!Array.isArray(state.macros) || state.macros.length === 0) {
             state.macros = DEFAULT_MACROS.map(m => ({ ...m }));

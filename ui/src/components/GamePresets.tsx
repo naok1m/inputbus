@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useBindingStore, MouseConfig } from '../store/mappingStore';
+import { useBindingStore } from '../store/mappingStore';
+import type { MouseConfig } from '../store/mappingStore';
 
 interface GamePreset {
   name: string;
@@ -7,6 +8,16 @@ interface GamePreset {
   gradient: string;
   config: MouseConfig | null;
 }
+
+const DEFAULT_MOUSE_CAMERA = {
+  nativeMouseCameraEnabled: false,
+  mouseCameraSensitivityX: 18.0,
+  mouseCameraSensitivityY: 18.0,
+  mouseCameraDeadzone: 0.08,
+  mouseCameraCurve: 1.30,
+  mouseCameraSmoothing: 0.0,
+  mouseCameraInvertY: false,
+};
 
 const GAME_PRESETS: GamePreset[] = [
   {
@@ -28,6 +39,7 @@ const GAME_PRESETS: GamePreset[] = [
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,
+      ...DEFAULT_MOUSE_CAMERA,
     },
   },
   {
@@ -49,6 +61,7 @@ const GAME_PRESETS: GamePreset[] = [
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,
+      ...DEFAULT_MOUSE_CAMERA,
     },
   },
   {
@@ -74,6 +87,7 @@ const GAME_PRESETS: GamePreset[] = [
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,
+      ...DEFAULT_MOUSE_CAMERA,
     },
   },
   {
@@ -95,6 +109,7 @@ const GAME_PRESETS: GamePreset[] = [
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,
+      ...DEFAULT_MOUSE_CAMERA,
     },
   },
   {
@@ -116,6 +131,7 @@ const GAME_PRESETS: GamePreset[] = [
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,
+      ...DEFAULT_MOUSE_CAMERA,
     },
   },
   {
