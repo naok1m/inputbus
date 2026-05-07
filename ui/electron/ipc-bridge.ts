@@ -10,6 +10,10 @@ export class CoreBridge extends EventEmitter {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private recvBuffer = Buffer.alloc(0);
 
+  get isConnected() {
+    return this.connected;
+  }
+
   connect() {
     if (this.socket) return;
 
