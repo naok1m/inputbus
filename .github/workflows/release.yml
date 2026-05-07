@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    name: Build Windows portable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Clean stale build caches
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force build/core, core/build, core/build2 -ErrorAction SilentlyContinue
+
+      - name: Configure core
+        run: cmake -B build/core -S core -G "Visual Studio 17 2022" -A x64
+
+      - name: Build core
+        run: cmake --build build/core --config Release --parallel
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Package portable app
+        working-directory: ui
+        run: npm run dist:portable
+
+      - name: Archive portable app
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "manual-${{ github.run_number }}" }
+          $zip = "InputBus-$version-win32-x64-portable.zip"
+          Compress-Archive -Path "ui/portable-out/InputBus-win32-x64" -DestinationPath $zip -Force
+          "ZIP_PATH=$zip" >> $env:GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InputBus-win32-x64-portable
+          path: ${{ env.ZIP_PATH }}
+
+      - name: Create GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+          generate_release_notes: true

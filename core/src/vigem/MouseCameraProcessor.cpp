@@ -62,6 +62,41 @@ MouseDelta MouseCameraProcessor::Process(float x, float y, float deltaTime, cons
     return {outX, outY};
 }
 
+MouseDelta MouseCameraProcessor::ProcessRawDelta(float rawDx, float rawDy, float deltaTime, const MouseCameraConfig& settings) {
+    if (std::abs(rawDx) < EPSILON && std::abs(rawDy) < EPSILON) {
+        Reset();
+        return {};
+    }
+
+    // Native mouse mode must feel like mouse input, not an analog stick.
+    // The default sensitivity (18.0) maps to 1:1 raw relative movement.
+    float dx = rawDx * (std::max(settings.mouseCameraSensitivityX, 0.0f) / 18.0f);
+    float dy = rawDy * (std::max(settings.mouseCameraSensitivityY, 0.0f) / 18.0f);
+    if (settings.mouseCameraInvertY) dy = -dy;
+
+    const float smoothing = std::clamp(settings.mouseCameraSmoothing, 0.0f, 1.0f);
+    if (smoothing > EPSILON) {
+        const float dt = std::clamp(deltaTime, 0.0001f, 0.05f);
+        const float alpha = std::clamp(dt / (smoothing + dt), 0.0f, 1.0f);
+        dx = m_previousDx + (dx - m_previousDx) * alpha;
+        dy = m_previousDy + (dy - m_previousDy) * alpha;
+    }
+
+    m_previousDx = dx;
+    m_previousDy = dy;
+
+    m_accumulatedX += dx;
+    m_accumulatedY += dy;
+
+    const int outX = static_cast<int>(std::trunc(m_accumulatedX));
+    const int outY = static_cast<int>(std::trunc(m_accumulatedY));
+
+    m_accumulatedX -= static_cast<float>(outX);
+    m_accumulatedY -= static_cast<float>(outY);
+
+    return {outX, outY};
+}
+
 void MouseCameraProcessor::Reset() {
     m_previousDx = 0.0f;
     m_previousDy = 0.0f;

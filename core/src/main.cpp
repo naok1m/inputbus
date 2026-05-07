@@ -503,23 +503,14 @@ int main() {
                     if (g_captureEnabled.load())
                         g_mapper.RefreshLeftStickFromKeyboard(g_gamepadState);
 
-                    int16_t rx = 0, ry = 0;
-                    g_mouseProc.Tick(dt, rx, ry);
                     const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled;
                     if (nativeMouseCameraEnabled) {
+                        g_mouseProc.Reset();
                         g_gamepadState.thumbRX = 0;
                         g_gamepadState.thumbRY = 0;
-                        if (g_captureEnabled.load()) {
-                            const float cameraX = static_cast<float>(rx) / 32767.0f;
-                            const float cameraY = static_cast<float>(-ry) / 32767.0f;
-                            const MouseDelta mouseDelta = g_mouseCameraProc.Process(cameraX, cameraY, dt, g_mouseCameraConfig);
-                            if (!mouseDelta.IsZero()) {
-                                g_nativeMouseInput.SendMouse(mouseDelta);
-                            }
-                        } else {
-                            g_mouseCameraProc.Reset();
-                        }
                     } else {
+                        int16_t rx = 0, ry = 0;
+                        g_mouseProc.Tick(dt, rx, ry);
                         g_mouseCameraProc.Reset();
                         g_gamepadState.thumbRX = rx;
                         g_gamepadState.thumbRY = ry;
@@ -897,11 +888,27 @@ int main() {
                     return g_mapper.OnKeyEvent(evt.key.vkCode, false, g_gamepadState);
 
                 case RawInputType::MouseMove:
+                    g_teleDeltaX.fetch_add(static_cast<int>(evt.mouse.deltaX));
+                    g_teleDeltaY.fetch_add(static_cast<int>(evt.mouse.deltaY));
+                    if (g_mouseCameraConfig.nativeMouseCameraEnabled) {
+                        g_gamepadState.thumbRX = 0;
+                        g_gamepadState.thumbRY = 0;
+                        g_mouseProc.Reset();
+
+                        const MouseDelta mouseDelta = g_mouseCameraProc.ProcessRawDelta(
+                            static_cast<float>(evt.mouse.deltaX),
+                            static_cast<float>(evt.mouse.deltaY),
+                            0.001f,
+                            g_mouseCameraConfig);
+                        if (!mouseDelta.IsZero()) {
+                            g_nativeMouseInput.SendMouse(mouseDelta);
+                        }
+                        return false;
+                    }
+
                     g_mouseProc.AddDelta(
                         static_cast<float>(evt.mouse.deltaX),
                         static_cast<float>(evt.mouse.deltaY));
-                    g_teleDeltaX.fetch_add(static_cast<int>(evt.mouse.deltaX));
-                    g_teleDeltaY.fetch_add(static_cast<int>(evt.mouse.deltaY));
                     return false; // raw input deltas only — legacy mouse blocked by hook
 
                 case RawInputType::MouseButton:

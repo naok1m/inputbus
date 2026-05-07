@@ -26,6 +26,7 @@ struct MouseDelta {
 class MouseCameraProcessor {
 public:
     MouseDelta Process(float x, float y, float deltaTime, const MouseCameraConfig& settings);
+    MouseDelta ProcessRawDelta(float dx, float dy, float deltaTime, const MouseCameraConfig& settings);
     void Reset();
 
 private:

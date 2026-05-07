@@ -1,29 +1,86 @@
-{
-  "profileName": "FPS - High Sens",
-  "version": "1.0",
-  "mouse": {
-    "sensitivity": 9.5,
-    "exponent": 1.0,
-    "maxSpeed": 1.0,
-    "deadzone": 0.008,
-    "smoothingFactor": 0,
-    "maxStepPerFrame": 0,
-    "target": "rightStick"
-  },
-  "keyBindings": {
-    "87": { "target": "leftStickY", "axisValue": 1.0, "label": "W -> Left Stick Up" },
-    "83": { "target": "leftStickY", "axisValue": -1.0, "label": "S -> Left Stick Down" },
-    "65": { "target": "leftStickX", "axisValue": -1.0, "label": "A -> Left Stick Left" },
-    "68": { "target": "leftStickX", "axisValue": 1.0, "label": "D -> Left Stick Right" },
-    "32": { "target": "button", "mask": 4096, "label": "Space -> A" },
-    "16": { "target": "button", "mask": 8192, "label": "Shift -> B" },
-    "17": { "target": "button", "mask": 16384, "label": "Ctrl -> X" },
-    "82": { "target": "rightTrigger", "axisValue": 1.0, "label": "R -> RT" }
-  },
-  "mouseBindings": {
-    "0": { "target": "rightTrigger", "axisValue": 1.0, "label": "LMB -> RT" },
-    "1": { "target": "leftTrigger", "axisValue": 1.0, "label": "RMB -> LT" },
-    "3": { "target": "button", "mask": 8192, "label": "Mouse Lateral 1 (X1) -> B" },
-    "4": { "target": "button", "mask": 16384, "label": "Mouse Lateral 2 (X2) -> X" }
-  }
+﻿{
+    "profileName":  "FPS - High Sens",
+    "version":  "1.0",
+    "mouse":  {
+                  "sensitivity":  9.5,
+                  "exponent":  1.0,
+                  "maxSpeed":  1.0,
+                  "deadzone":  0.008,
+                  "smoothingFactor":  0,
+                  "maxStepPerFrame":  0,
+                  "target":  "rightStick"
+              },
+    "keyBindings":  {
+                        "87":  {
+                                   "target":  "leftStickY",
+                                   "axisValue":  1.0,
+                                   "label":  "W -\u003e Left Stick Up"
+                               },
+                        "83":  {
+                                   "target":  "leftStickY",
+                                   "axisValue":  -1.0,
+                                   "label":  "S -\u003e Left Stick Down"
+                               },
+                        "65":  {
+                                   "target":  "leftStickX",
+                                   "axisValue":  -1.0,
+                                   "label":  "A -\u003e Left Stick Left"
+                               },
+                        "68":  {
+                                   "target":  "leftStickX",
+                                   "axisValue":  1.0,
+                                   "label":  "D -\u003e Left Stick Right"
+                               },
+                        "32":  {
+                                   "target":  "button",
+                                   "mask":  4096,
+                                   "label":  "Space -\u003e A"
+                               },
+                        "16":  {
+                                   "target":  "button",
+                                   "mask":  8192,
+                                   "label":  "Shift -\u003e B"
+                               },
+                        "17":  {
+                                   "target":  "button",
+                                   "mask":  16384,
+                                   "label":  "Ctrl -\u003e X"
+                               },
+                        "82":  {
+                                   "target":  "rightTrigger",
+                                   "axisValue":  1.0,
+                                   "label":  "R -\u003e RT"
+                               }
+                    },
+    "mouseBindings":  {
+                          "0":  {
+                                    "target":  "rightTrigger",
+                                    "axisValue":  1.0,
+                                    "label":  "LMB -\u003e RT"
+                                },
+                          "1":  {
+                                    "target":  "leftTrigger",
+                                    "axisValue":  1.0,
+                                    "label":  "RMB -\u003e LT"
+                                },
+                          "3":  {
+                                    "target":  "button",
+                                    "mask":  8192,
+                                    "label":  "Mouse Lateral 1 (X1) -\u003e B"
+                                },
+                          "4":  {
+                                    "target":  "button",
+                                    "mask":  16384,
+                                    "label":  "Mouse Lateral 2 (X2) -\u003e X"
+                                }
+                      },
+    "mouseCamera":  {
+                        "nativeMouseCameraEnabled":  true,
+                        "mouseCameraSensitivityX":  18,
+                        "mouseCameraSensitivityY":  18,
+                        "mouseCameraDeadzone":  0.08,
+                        "mouseCameraCurve":  1.3,
+                        "mouseCameraSmoothing":  0,
+                        "mouseCameraInvertY":  false
+                    }
 }

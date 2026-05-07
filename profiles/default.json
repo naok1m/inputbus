@@ -1,31 +1,96 @@
-{
-  "profileName": "FPS - Default",
-  "version": "1.0",
-  "mouse": {
-    "sensitivity": 8.0,
-    "exponent": 1.0,
-    "maxSpeed": 1.0,
-    "deadzone": 0.01,
-    "smoothingFactor": 0,
-    "maxStepPerFrame": 0,
-    "target": "rightStick"
-  },
-  "keyBindings": {
-    "87":  { "target": "leftStickY", "axisValue": 1.0,  "label": "W → Left Stick Up" },
-    "83":  { "target": "leftStickY", "axisValue": -1.0, "label": "S → Left Stick Down" },
-    "65":  { "target": "leftStickX", "axisValue": -1.0, "label": "A → Left Stick Left" },
-    "68":  { "target": "leftStickX", "axisValue": 1.0,  "label": "D → Left Stick Right" },
-    "32":  { "target": "button", "mask": 4096, "label": "Space → A Button" },
-    "70":  { "target": "leftTrigger",  "axisValue": 1.0, "label": "F → LT" },
-    "82":  { "target": "rightTrigger", "axisValue": 1.0, "label": "R → RT" },
-    "16":  { "target": "button", "mask": 8192, "label": "Shift → LB" },
-    "17":  { "target": "button", "mask": 16384,"label": "Ctrl → RB" },
-    "27":  { "target": "button", "mask": 32,   "label": "Esc → Start" }
-  },
-  "mouseBindings": {
-    "0": { "target": "button", "mask": 16384, "label": "LMB → RT" },
-    "1": { "target": "button", "mask": 8192,  "label": "RMB → LT" },
-    "3": { "target": "button", "mask": 32768, "label": "Mouse Lateral 1 (X1) → Y" },
-    "4": { "target": "button", "mask": 4096,  "label": "Mouse Lateral 2 (X2) → A" }
-  }
+﻿{
+    "profileName":  "FPS - Default",
+    "version":  "1.0",
+    "mouse":  {
+                  "sensitivity":  8.0,
+                  "exponent":  1.0,
+                  "maxSpeed":  1.0,
+                  "deadzone":  0.01,
+                  "smoothingFactor":  0,
+                  "maxStepPerFrame":  0,
+                  "target":  "rightStick"
+              },
+    "keyBindings":  {
+                        "87":  {
+                                   "target":  "leftStickY",
+                                   "axisValue":  1.0,
+                                   "label":  "W â†’ Left Stick Up"
+                               },
+                        "83":  {
+                                   "target":  "leftStickY",
+                                   "axisValue":  -1.0,
+                                   "label":  "S â†’ Left Stick Down"
+                               },
+                        "65":  {
+                                   "target":  "leftStickX",
+                                   "axisValue":  -1.0,
+                                   "label":  "A â†’ Left Stick Left"
+                               },
+                        "68":  {
+                                   "target":  "leftStickX",
+                                   "axisValue":  1.0,
+                                   "label":  "D â†’ Left Stick Right"
+                               },
+                        "32":  {
+                                   "target":  "button",
+                                   "mask":  4096,
+                                   "label":  "Space â†’ A Button"
+                               },
+                        "70":  {
+                                   "target":  "leftTrigger",
+                                   "axisValue":  1.0,
+                                   "label":  "F â†’ LT"
+                               },
+                        "82":  {
+                                   "target":  "rightTrigger",
+                                   "axisValue":  1.0,
+                                   "label":  "R â†’ RT"
+                               },
+                        "16":  {
+                                   "target":  "button",
+                                   "mask":  8192,
+                                   "label":  "Shift â†’ LB"
+                               },
+                        "17":  {
+                                   "target":  "button",
+                                   "mask":  16384,
+                                   "label":  "Ctrl â†’ RB"
+                               },
+                        "27":  {
+                                   "target":  "button",
+                                   "mask":  32,
+                                   "label":  "Esc â†’ Start"
+                               }
+                    },
+    "mouseBindings":  {
+                          "0":  {
+                                    "target":  "button",
+                                    "mask":  16384,
+                                    "label":  "LMB â†’ RT"
+                                },
+                          "1":  {
+                                    "target":  "button",
+                                    "mask":  8192,
+                                    "label":  "RMB â†’ LT"
+                                },
+                          "3":  {
+                                    "target":  "button",
+                                    "mask":  32768,
+                                    "label":  "Mouse Lateral 1 (X1) â†’ Y"
+                                },
+                          "4":  {
+                                    "target":  "button",
+                                    "mask":  4096,
+                                    "label":  "Mouse Lateral 2 (X2) â†’ A"
+                                }
+                      },
+    "mouseCamera":  {
+                        "nativeMouseCameraEnabled":  true,
+                        "mouseCameraSensitivityX":  18,
+                        "mouseCameraSensitivityY":  18,
+                        "mouseCameraDeadzone":  0.08,
+                        "mouseCameraCurve":  1.3,
+                        "mouseCameraSmoothing":  0,
+                        "mouseCameraInvertY":  false
+                    }
 }
