@@ -26,10 +26,10 @@ static GamepadState        g_gamepadState{};
 static MappingEngine       g_mapper;
 static MouseAnalogProcessor g_mouseProc;
 static MouseCameraProcessor g_mouseCameraProc;
-static NativeMouseInputService g_nativeMouseInput;
 static MouseCameraConfig   g_mouseCameraConfig{};
 static std::mutex          g_stateMutex;
 static std::atomic<bool>   g_captureEnabled{false};
+static std::atomic<bool>   g_nativeMouseCameraEnabled{false};
 
 // Telemetry delta accumulators (atomic — written by input thread, read+reset by update thread)
 static std::atomic<int> g_teleDeltaX{0};
@@ -105,6 +105,13 @@ static HHOOK g_mouseHook = nullptr;
 // unaffected — InputBus still receives hardware deltas for analog conversion.
 static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0 && g_captureEnabled.load(std::memory_order_relaxed)) {
+        if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
+            if (wParam == WM_MOUSEMOVE) {
+                return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
+            }
+            return 1; // keep mapped mouse buttons from double-firing in-game
+        }
+
         const auto* info = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
         if (info && info->dwExtraInfo == NativeMouseInputService::INPUTBUS_MOUSE_EXTRA_INFO) {
             return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
@@ -126,12 +133,17 @@ static void EnableMouseBlock() {
             std::cerr << "[Cursor] Failed to install mouse hook: " << GetLastError() << "\n";
     }
 
-    // 2. Center cursor and clip to 1x1 pixel (blocks GetCursorPos-based games)
-    int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
-    int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
-    SetCursorPos(cx, cy);
-    RECT clipRect = { cx, cy, cx + 1, cy + 1 };
-    ClipCursor(&clipRect);
+    // 2. Native mouse camera passes physical mouse movement to the game.
+    // Analog mode still clips the cursor so only the virtual controller aims.
+    if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
+        ClipCursor(nullptr);
+    } else {
+        int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
+        int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
+        SetCursorPos(cx, cy);
+        RECT clipRect = { cx, cy, cx + 1, cy + 1 };
+        ClipCursor(&clipRect);
+    }
 
     // 3. Hide visual cursor
     while (ShowCursor(FALSE) >= 0) {}
@@ -139,6 +151,11 @@ static void EnableMouseBlock() {
 
 // Disables mouse blocking: release clip + show cursor
 static void DisableMouseBlock() {
+    if (g_mouseHook) {
+        UnhookWindowsHookEx(g_mouseHook);
+        g_mouseHook = nullptr;
+        std::cout << "[Cursor] Mouse hook removed\n";
+    }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
 }
@@ -201,6 +218,8 @@ int main() {
         // 3. IPC SERVER (UI communication)
         // ====================================================================
 
+        g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
+
         PipeServer ipc;
         ipc.Start([&](MsgType type, const std::string& payload, HANDLE) -> std::string {
             using json = nlohmann::json;
@@ -216,10 +235,16 @@ int main() {
                         else if (j.is_object() && j.contains("profileFile"))
                             file = (std::filesystem::path("profiles") / j["profileFile"].get<std::string>()).string();
 
-                        if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc, &g_mouseCameraConfig))
+                        if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
+                            if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
-                        if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig))
+                        }
+                        if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
+                            if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
+                        }
                     } catch (...) {}
                     return R"({"ok":false,"error":"invalid profile"})";
                 }
@@ -229,6 +254,10 @@ int main() {
                     std::cout << "[Profile] SetActiveProfile: " << (ok ? "OK" : "FAIL")
                               << " hasW=" << g_mapper.HasKeyBinding(87)
                               << " hasA=" << g_mapper.HasKeyBinding(65) << "\n";
+                    if (ok) {
+                        g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
+                        if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
+                    }
                     return ok
                         ? R"({"ok":true})"
                         : R"({"ok":false,"error":"invalid profile"})";
@@ -281,6 +310,8 @@ int main() {
                         }
 
                         g_mouseProc.UpdateConfig(cfg);
+                        g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
+                        if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                         return R"({"ok":true})";
                     } catch (...) {
                         return R"({"ok":false,"error":"invalid mouse config"})";
@@ -311,16 +342,11 @@ int main() {
                         bool en = j.is_boolean() ? j.get<bool>() : j.value("enabled", false);
                         g_captureEnabled.store(en);
 
-                        // ClipCursor works from any thread; hook checks g_captureEnabled
                         if (en) {
-                            int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
-                            int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
-                            SetCursorPos(cx, cy);
-                            RECT r = { cx, cy, cx + 1, cy + 1 };
-                            ClipCursor(&r);
+                            EnableMouseBlock();
                         } else {
                             g_mouseCameraProc.Reset();
-                            ClipCursor(nullptr);
+                            DisableMouseBlock();
                         }
 
                         return json{{"ok", true}, {"captureEnabled", en}}.dump();
@@ -879,6 +905,13 @@ int main() {
                 }
             }
 
+            if (evt.type == RawInputType::MouseMove &&
+                g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
+                g_teleDeltaX.fetch_add(static_cast<int>(evt.mouse.deltaX));
+                g_teleDeltaY.fetch_add(static_cast<int>(evt.mouse.deltaY));
+                return false;
+            }
+
             std::lock_guard lock(g_stateMutex);
             switch (evt.type) {
                 case RawInputType::KeyDown:
@@ -894,15 +927,6 @@ int main() {
                         g_gamepadState.thumbRX = 0;
                         g_gamepadState.thumbRY = 0;
                         g_mouseProc.Reset();
-
-                        const MouseDelta mouseDelta = g_mouseCameraProc.ProcessRawDelta(
-                            static_cast<float>(evt.mouse.deltaX),
-                            static_cast<float>(evt.mouse.deltaY),
-                            0.001f,
-                            g_mouseCameraConfig);
-                        if (!mouseDelta.IsZero()) {
-                            g_nativeMouseInput.SendMouse(mouseDelta);
-                        }
                         return false;
                     }
 
