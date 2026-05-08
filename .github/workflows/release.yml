@@ -44,12 +44,50 @@ jobs:
         working-directory: ui
         run: npm run dist:portable
 
+      - name: Verify portable app contents
+        shell: pwsh
+        run: |
+          $portableRoot = "ui/portable-out/InputBus-win32-x64"
+          $requiredPaths = @(
+            "$portableRoot/InputBus.exe",
+            "$portableRoot/resources/core/rewsd_core.exe",
+            "$portableRoot/resources/core/profiles/default.json",
+            "$portableRoot/resources/core/profiles/default_v2.json",
+            "$portableRoot/resources/core/profiles/fps.json",
+            "$portableRoot/resources/core/profiles/warzone.json"
+          )
+
+          foreach ($path in $requiredPaths) {
+            if (!(Test-Path $path)) {
+              throw "Portable package is missing required file: $path"
+            }
+          }
+
+          if (Test-Path "$portableRoot/resources/app/portable-v4") {
+            throw "Portable package accidentally includes the old portable-v4 bundle inside resources/app"
+          }
+
       - name: Archive portable app
         shell: pwsh
         run: |
           $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "manual-${{ github.run_number }}" }
           $zip = "InputBus-$version-win32-x64-portable.zip"
           Compress-Archive -Path "ui/portable-out/InputBus-win32-x64" -DestinationPath $zip -Force
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $entries = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip)).Entries.FullName
+          $requiredEntries = @(
+            "InputBus-win32-x64/resources/core/rewsd_core.exe",
+            "InputBus-win32-x64/resources/core/profiles/default.json",
+            "InputBus-win32-x64/resources/core/profiles/default_v2.json"
+          )
+
+          foreach ($entry in $requiredEntries) {
+            if ($entries -notcontains $entry) {
+              throw "Release zip is missing required entry: $entry"
+            }
+          }
+
           "ZIP_PATH=$zip" >> $env:GITHUB_ENV
 
       - name: Upload artifact
