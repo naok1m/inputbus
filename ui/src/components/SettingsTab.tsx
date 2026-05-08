@@ -48,23 +48,23 @@ export function SettingsTab() {
         <div className="settings-section-title">Mouse Camera Mode</div>
         <div className="settings-row">
           <div>
-            <div className="settings-row-label">Enable</div>
-            <div className="settings-row-desc">Use the physical mouse directly for camera input</div>
+            <div className="settings-row-label">Native Mouse Passthrough</div>
+            <div className="settings-row-desc">Only for games that allow mouse and controller at the same time</div>
           </div>
           <button
             type="button"
             className={`toggle ${mouseConfig.nativeMouseCameraEnabled ? 'toggle--on' : ''}`}
             onClick={() => updateMouseCamera('nativeMouseCameraEnabled', !mouseConfig.nativeMouseCameraEnabled)}
             aria-pressed={mouseConfig.nativeMouseCameraEnabled}
-            title="Enable physical mouse passthrough"
+            title="Enable native mouse passthrough"
           >
             <span className="toggle-thumb" />
           </button>
         </div>
         <div className="settings-row" style={{ paddingBottom: 0 }}>
           <div>
-            <div className="settings-row-label">Native path</div>
-            <div className="settings-row-desc">No curve, smoothing, deadzone, or synthetic mouse injection</div>
+            <div className="settings-row-label">Warzone / Reflex</div>
+            <div className="settings-row-desc">Keep this off so mouse is converted to right stick on the virtual controller</div>
           </div>
         </div>
       </div>

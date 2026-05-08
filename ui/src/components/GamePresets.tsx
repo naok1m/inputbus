@@ -10,7 +10,7 @@ interface GamePreset {
 }
 
 const DEFAULT_MOUSE_CAMERA = {
-  nativeMouseCameraEnabled: true,
+  nativeMouseCameraEnabled: false,
   mouseCameraSensitivityX: 1.0,
   mouseCameraSensitivityY: 1.0,
   mouseCameraDeadzone: 0.0,
@@ -33,9 +33,9 @@ const GAME_PRESETS: GamePreset[] = [
       deadzone:        0,
       smoothingFactor: 0,
       maxStepPerFrame: 0,
-      jitterThreshold: 0.3,
+      jitterThreshold: 0.1,
       decayDelay:      0,
-      decayRate:       0,
+      decayRate:       20,
       decayMinStick:   0,
       maxSpeed:        1.0,
       antiDeadzone:    0,

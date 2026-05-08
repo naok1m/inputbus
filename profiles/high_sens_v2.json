@@ -6,20 +6,25 @@
                   "comment":  "ConfiguraÃ§Ã£o agressiva para movimentos rÃ¡pidos",
                   "sensitivityX":  4.2,
                   "sensitivityY":  4.2,
-                  "exponent":  1.0,
+                  "exponent":  1,
                   "minCurveThreshold":  0.08,
-                  "maxSpeed":  1.0,
+                  "maxSpeed":  1,
                   "acceleration":  15.0,
                   "deceleration":  20.0,
-                  "deadzone":  0.01,
-                  "jitterThreshold":  0.2,
+                  "deadzone":  0,
+                  "jitterThreshold":  0.1,
                   "smoothingFactor":  0,
-                  "maxStepPerFrame":  0.1,
-                  "decayDelay":  80.0,
-                  "decayRate":  7.0,
+                  "maxStepPerFrame":  0,
+                  "decayDelay":  0,
+                  "decayRate":  20,
                   "normalizeVector":  true,
                   "independentAxes":  false,
-                  "target":  "rightStick"
+                  "target":  "rightStick",
+                  "accelCurve":  [
+
+                                 ],
+                  "decayMinStick":  0,
+                  "antiDeadzone":  0
               },
     "keyBindings":  {
                         "87":  {
@@ -86,7 +91,7 @@
                                 }
                       },
     "mouseCamera":  {
-                        "nativeMouseCameraEnabled":  true,
+                        "nativeMouseCameraEnabled":  false,
                         "mouseCameraSensitivityX":  1,
                         "mouseCameraSensitivityY":  1,
                         "mouseCameraDeadzone":  0,

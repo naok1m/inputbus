@@ -5,20 +5,21 @@
     "mouse":  {
                   "sensitivityX":  7.0,
                   "sensitivityY":  7.0,
-                  "exponent":  1.0,
+                  "exponent":  1,
                   "accelCurve":  [
 
                                  ],
-                  "maxSpeed":  1.0,
-                  "deadzone":  0.0,
-                  "jitterThreshold":  0.3,
+                  "maxSpeed":  1,
+                  "deadzone":  0,
+                  "jitterThreshold":  0.1,
                   "smoothingFactor":  0,
                   "maxStepPerFrame":  0,
-                  "decayDelay":  0.0,
-                  "decayRate":  0.0,
-                  "decayMinStick":  0.0,
+                  "decayDelay":  0,
+                  "decayRate":  20,
+                  "decayMinStick":  0,
                   "normalizeVector":  true,
-                  "target":  "rightStick"
+                  "target":  "rightStick",
+                  "antiDeadzone":  0
               },
     "keyBindings":  {
                         "87":  {
@@ -120,7 +121,7 @@
                                 }
                       },
     "mouseCamera":  {
-                        "nativeMouseCameraEnabled":  true,
+                        "nativeMouseCameraEnabled":  false,
                         "mouseCameraSensitivityX":  1,
                         "mouseCameraSensitivityY":  1,
                         "mouseCameraDeadzone":  0,

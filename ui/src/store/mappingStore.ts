@@ -179,7 +179,7 @@ const DEFAULT_CONFIG: MouseConfig = {
   decayRate:       6,
   decayMinStick:   0,
   antiDeadzone:    0,
-  nativeMouseCameraEnabled: true,
+  nativeMouseCameraEnabled: false,
   mouseCameraSensitivityX: 1.0,
   mouseCameraSensitivityY: 1.0,
   mouseCameraDeadzone: 0.0,
@@ -203,7 +203,7 @@ const WARZONE_CONFIG: MouseConfig = {
   decayRate:       20,
   decayMinStick:   0,
   antiDeadzone:    0,
-  nativeMouseCameraEnabled: true,
+  nativeMouseCameraEnabled: false,
   mouseCameraSensitivityX: 1.0,
   mouseCameraSensitivityY: 1.0,
   mouseCameraDeadzone: 0.0,
@@ -583,7 +583,7 @@ export const useBindingStore = create<MappingStore>()(
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;
-          if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = true;
+          if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = false;
           state.mouseConfig.mouseCameraSensitivityX = 1.0;
           state.mouseConfig.mouseCameraSensitivityY = 1.0;
           state.mouseConfig.mouseCameraDeadzone = 0.0;

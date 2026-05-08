@@ -6,20 +6,25 @@
                   "comment":  "ConfiguraÃ§Ã£o do processador de mouse â†’ analÃ³gico",
                   "sensitivityX":  2.8,
                   "sensitivityY":  2.8,
-                  "exponent":  1.1,
+                  "exponent":  1,
                   "minCurveThreshold":  0.1,
-                  "maxSpeed":  1.0,
+                  "maxSpeed":  1,
                   "acceleration":  10.0,
                   "deceleration":  15.0,
-                  "deadzone":  0.015,
-                  "jitterThreshold":  0.3,
-                  "smoothingFactor":  0.003,
-                  "maxStepPerFrame":  0.06,
-                  "decayDelay":  120.0,
-                  "decayRate":  5.5,
+                  "deadzone":  0,
+                  "jitterThreshold":  0.1,
+                  "smoothingFactor":  0,
+                  "maxStepPerFrame":  0,
+                  "decayDelay":  0,
+                  "decayRate":  20,
                   "normalizeVector":  true,
                   "independentAxes":  false,
-                  "target":  "rightStick"
+                  "target":  "rightStick",
+                  "accelCurve":  [
+
+                                 ],
+                  "decayMinStick":  0,
+                  "antiDeadzone":  0
               },
     "keyBindings":  {
                         "87":  {
@@ -121,7 +126,7 @@
                                 }
                       },
     "mouseCamera":  {
-                        "nativeMouseCameraEnabled":  true,
+                        "nativeMouseCameraEnabled":  false,
                         "mouseCameraSensitivityX":  1,
                         "mouseCameraSensitivityY":  1,
                         "mouseCameraDeadzone":  0,
