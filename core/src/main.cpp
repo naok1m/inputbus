@@ -1,7 +1,6 @@
 // main.cpp — InputBus core process
 // Input pipeline: Raw Input API → MappingEngine → MouseAnalogProcessor → ViGEmBus
 #include "input/RawInputHandler_v2.h"
-#include "input/NativeMouseInputService.h"
 #include "vigem/MappingEngine.h"
 #include "mapping/ProfileManager.h"
 #include "vigem/MouseAnalogProcessor.h"
@@ -25,7 +24,6 @@
 static GamepadState        g_gamepadState{};
 static MappingEngine       g_mapper;
 static MouseAnalogProcessor g_mouseProc;
-static MouseCameraProcessor g_mouseCameraProc;
 static MouseCameraConfig   g_mouseCameraConfig{};
 static std::mutex          g_stateMutex;
 static std::atomic<bool>   g_captureEnabled{false};
@@ -106,16 +104,9 @@ static HHOOK g_mouseHook = nullptr;
 static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0 && g_captureEnabled.load(std::memory_order_relaxed)) {
         if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
-            if (wParam == WM_MOUSEMOVE) {
-                return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
-            }
-            return 1; // keep mapped mouse buttons from double-firing in-game
-        }
-
-        const auto* info = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
-        if (info && info->dwExtraInfo == NativeMouseInputService::INPUTBUS_MOUSE_EXTRA_INFO) {
             return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
         }
+
         return 1; // eat the message — game never sees it
     }
     return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
@@ -123,6 +114,19 @@ static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lPara
 
 // Enables full mouse blocking: hook + cursor clip + hide
 static void EnableMouseBlock() {
+    // Native mouse mode must be real mouse passthrough: no cursor clip, no low-level
+    // hook, no synthetic movement. The game receives physical mouse input directly.
+    if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
+        if (g_mouseHook) {
+            UnhookWindowsHookEx(g_mouseHook);
+            g_mouseHook = nullptr;
+            std::cout << "[Cursor] Mouse hook removed (native mouse passthrough)\n";
+        }
+        ClipCursor(nullptr);
+        while (ShowCursor(TRUE) < 0) {}
+        return;
+    }
+
     // 1. Install low-level mouse hook (blocks legacy mouse messages system-wide)
     if (!g_mouseHook) {
         g_mouseHook = SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc,
@@ -133,17 +137,12 @@ static void EnableMouseBlock() {
             std::cerr << "[Cursor] Failed to install mouse hook: " << GetLastError() << "\n";
     }
 
-    // 2. Native mouse camera passes physical mouse movement to the game.
-    // Analog mode still clips the cursor so only the virtual controller aims.
-    if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
-        ClipCursor(nullptr);
-    } else {
-        int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
-        int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
-        SetCursorPos(cx, cy);
-        RECT clipRect = { cx, cy, cx + 1, cy + 1 };
-        ClipCursor(&clipRect);
-    }
+    // 2. Center cursor and clip to 1x1 pixel (blocks GetCursorPos-based games)
+    int cx = GetSystemMetrics(SM_CXSCREEN) / 2;
+    int cy = GetSystemMetrics(SM_CYSCREEN) / 2;
+    SetCursorPos(cx, cy);
+    RECT clipRect = { cx, cy, cx + 1, cy + 1 };
+    ClipCursor(&clipRect);
 
     // 3. Hide visual cursor
     while (ShowCursor(FALSE) >= 0) {}
@@ -345,7 +344,6 @@ int main() {
                         if (en) {
                             EnableMouseBlock();
                         } else {
-                            g_mouseCameraProc.Reset();
                             DisableMouseBlock();
                         }
 
@@ -537,7 +535,6 @@ int main() {
                     } else {
                         int16_t rx = 0, ry = 0;
                         g_mouseProc.Tick(dt, rx, ry);
-                        g_mouseCameraProc.Reset();
                         g_gamepadState.thumbRX = rx;
                         g_gamepadState.thumbRY = ry;
                     }
@@ -880,7 +877,6 @@ int main() {
                             EnableMouseBlock();
                         else {
                             std::lock_guard lock(g_stateMutex);
-                            g_mouseCameraProc.Reset();
                             DisableMouseBlock();
                         }
 
@@ -905,10 +901,14 @@ int main() {
                 }
             }
 
-            if (evt.type == RawInputType::MouseMove &&
-                g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
-                g_teleDeltaX.fetch_add(static_cast<int>(evt.mouse.deltaX));
-                g_teleDeltaY.fetch_add(static_cast<int>(evt.mouse.deltaY));
+            if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed) &&
+                (evt.type == RawInputType::MouseMove ||
+                 evt.type == RawInputType::MouseButton ||
+                 evt.type == RawInputType::MouseWheel)) {
+                if (evt.type == RawInputType::MouseMove) {
+                    g_teleDeltaX.fetch_add(static_cast<int>(evt.mouse.deltaX));
+                    g_teleDeltaY.fetch_add(static_cast<int>(evt.mouse.deltaY));
+                }
                 return false;
             }
 

@@ -14,37 +14,6 @@ const VK_LABELS: Record<number, string> = {
   0xC0:'~',0x14:'CapsLock',
 };
 
-function fmt(v: number, step: number): string {
-  const decimals = step < 0.01 ? 3 : step < 0.1 ? 2 : step < 1 ? 1 : 0;
-  return v.toFixed(decimals);
-}
-
-function MouseCameraSlider({
-  label, value, min, max, step, onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div className="slider-row">
-      <span className="slider-label">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={e => onChange(parseFloat(e.target.value))}
-      />
-      <span className="slider-value">{value === 0 && label === 'Smoothing' ? 'OFF' : fmt(value, step)}</span>
-    </div>
-  );
-}
-
 export function SettingsTab() {
   const {
     activeProfile, savedProfiles, saveProfile, loadProfile,
@@ -80,44 +49,23 @@ export function SettingsTab() {
         <div className="settings-row">
           <div>
             <div className="settings-row-label">Enable</div>
-            <div className="settings-row-desc">Route camera output through native relative mouse movement</div>
+            <div className="settings-row-desc">Use the physical mouse directly for camera input</div>
           </div>
           <button
             type="button"
             className={`toggle ${mouseConfig.nativeMouseCameraEnabled ? 'toggle--on' : ''}`}
             onClick={() => updateMouseCamera('nativeMouseCameraEnabled', !mouseConfig.nativeMouseCameraEnabled)}
             aria-pressed={mouseConfig.nativeMouseCameraEnabled}
-            title="Enable native mouse camera mode"
+            title="Enable physical mouse passthrough"
           >
             <span className="toggle-thumb" />
           </button>
-        </div>
-        <div className="slider-section" style={{ marginTop: 10, marginBottom: 0 }}>
-          <MouseCameraSlider label="Sensitivity X" value={mouseConfig.mouseCameraSensitivityX} min={0.1} max={60} step={0.1}
-            onChange={v => updateMouseCamera('mouseCameraSensitivityX', v)} />
-          <MouseCameraSlider label="Sensitivity Y" value={mouseConfig.mouseCameraSensitivityY} min={0.1} max={60} step={0.1}
-            onChange={v => updateMouseCamera('mouseCameraSensitivityY', v)} />
-          <MouseCameraSlider label="Deadzone" value={mouseConfig.mouseCameraDeadzone} min={0} max={0.3} step={0.005}
-            onChange={v => updateMouseCamera('mouseCameraDeadzone', v)} />
-          <MouseCameraSlider label="Curve" value={mouseConfig.mouseCameraCurve} min={0.1} max={3} step={0.05}
-            onChange={v => updateMouseCamera('mouseCameraCurve', v)} />
-          <MouseCameraSlider label="Smoothing" value={mouseConfig.mouseCameraSmoothing} min={0} max={0.2} step={0.001}
-            onChange={v => updateMouseCamera('mouseCameraSmoothing', v)} />
         </div>
         <div className="settings-row" style={{ paddingBottom: 0 }}>
           <div>
-            <div className="settings-row-label">Invert Y</div>
-            <div className="settings-row-desc">Reverse vertical native mouse movement</div>
+            <div className="settings-row-label">Native path</div>
+            <div className="settings-row-desc">No curve, smoothing, deadzone, or synthetic mouse injection</div>
           </div>
-          <button
-            type="button"
-            className={`toggle ${mouseConfig.mouseCameraInvertY ? 'toggle--on' : ''}`}
-            onClick={() => updateMouseCamera('mouseCameraInvertY', !mouseConfig.mouseCameraInvertY)}
-            aria-pressed={mouseConfig.mouseCameraInvertY}
-            title="Invert vertical camera movement"
-          >
-            <span className="toggle-thumb" />
-          </button>
         </div>
       </div>
 

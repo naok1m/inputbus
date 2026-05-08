@@ -11,10 +11,10 @@ interface GamePreset {
 
 const DEFAULT_MOUSE_CAMERA = {
   nativeMouseCameraEnabled: true,
-  mouseCameraSensitivityX: 18.0,
-  mouseCameraSensitivityY: 18.0,
-  mouseCameraDeadzone: 0.08,
-  mouseCameraCurve: 1.30,
+  mouseCameraSensitivityX: 1.0,
+  mouseCameraSensitivityY: 1.0,
+  mouseCameraDeadzone: 0.0,
+  mouseCameraCurve: 1.0,
   mouseCameraSmoothing: 0.0,
   mouseCameraInvertY: false,
 };

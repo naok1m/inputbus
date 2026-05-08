@@ -180,10 +180,10 @@ const DEFAULT_CONFIG: MouseConfig = {
   decayMinStick:   0,
   antiDeadzone:    0,
   nativeMouseCameraEnabled: true,
-  mouseCameraSensitivityX: 18.0,
-  mouseCameraSensitivityY: 18.0,
-  mouseCameraDeadzone: 0.08,
-  mouseCameraCurve: 1.30,
+  mouseCameraSensitivityX: 1.0,
+  mouseCameraSensitivityY: 1.0,
+  mouseCameraDeadzone: 0.0,
+  mouseCameraCurve: 1.0,
   mouseCameraSmoothing: 0.0,
   mouseCameraInvertY: false,
 };
@@ -204,10 +204,10 @@ const WARZONE_CONFIG: MouseConfig = {
   decayMinStick:   0,
   antiDeadzone:    0,
   nativeMouseCameraEnabled: true,
-  mouseCameraSensitivityX: 18.0,
-  mouseCameraSensitivityY: 18.0,
-  mouseCameraDeadzone: 0.08,
-  mouseCameraCurve: 1.30,
+  mouseCameraSensitivityX: 1.0,
+  mouseCameraSensitivityY: 1.0,
+  mouseCameraDeadzone: 0.0,
+  mouseCameraCurve: 1.0,
   mouseCameraSmoothing: 0.0,
   mouseCameraInvertY: false,
 };
@@ -583,11 +583,11 @@ export const useBindingStore = create<MappingStore>()(
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;
-          state.mouseConfig.nativeMouseCameraEnabled = true;
-          if (state.mouseConfig.mouseCameraSensitivityX == null) state.mouseConfig.mouseCameraSensitivityX = 18.0;
-          if (state.mouseConfig.mouseCameraSensitivityY == null) state.mouseConfig.mouseCameraSensitivityY = 18.0;
-          if (state.mouseConfig.mouseCameraDeadzone == null) state.mouseConfig.mouseCameraDeadzone = 0.08;
-          if (state.mouseConfig.mouseCameraCurve == null) state.mouseConfig.mouseCameraCurve = 1.30;
+          if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = true;
+          state.mouseConfig.mouseCameraSensitivityX = 1.0;
+          state.mouseConfig.mouseCameraSensitivityY = 1.0;
+          state.mouseConfig.mouseCameraDeadzone = 0.0;
+          state.mouseConfig.mouseCameraCurve = 1.0;
           if (state.mouseConfig.mouseCameraSmoothing == null) state.mouseConfig.mouseCameraSmoothing = 0.0;
           if (state.mouseConfig.mouseCameraInvertY == null) state.mouseConfig.mouseCameraInvertY = false;
           // Ensure macros array exists with all defaults
