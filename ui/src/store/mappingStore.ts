@@ -120,6 +120,15 @@ const DEFAULT_MACROS: MacroDef[] = [
     config: { key: 0x46, delayMs: 80 },
   },
   {
+    id: 'scroll-swap',
+    name: 'Scroll Swap',
+    icon: '\u21C5',
+    category: 'combat',
+    description: 'Mouse wheel up/down taps Y to swap weapons',
+    enabled: true,
+    config: { button: 0x8000, durationMs: 45 },
+  },
+  {
     id: 'tab-score',
     name: 'Tab Scoreboard',
     icon: '\u{1F4CB}',
@@ -369,6 +378,11 @@ function buildMacroPayload(macro: MacroDef): Record<string, unknown> | null {
       yyEnabled: macro.enabled,
       yyKey: cfg.key ?? 0x46,
       yyDelayMs: cfg.delayMs ?? 80,
+    },
+    'scroll-swap': {
+      scrollSwapEnabled: macro.enabled,
+      scrollSwapButton: cfg.button ?? 0x8000,
+      scrollSwapDurationMs: cfg.durationMs ?? 45,
     },
     'tab-score': {
       tabScoreEnabled: macro.enabled,
