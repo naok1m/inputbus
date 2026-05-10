@@ -276,6 +276,10 @@ int main() {
                         }
                         if (j.contains("exponent"))        cfg.exponent        = j["exponent"];
                         if (j.contains("maxSpeed"))        cfg.maxSpeed        = j["maxSpeed"];
+                        if (j.contains("velocityMode"))    cfg.velocityMode    = j["velocityMode"];
+                        if (j.contains("velocityScale"))   cfg.velocityScale   = j["velocityScale"];
+                        if (j.contains("responseTime"))    cfg.responseTime    = j["responseTime"];
+                        if (j.contains("stopTime"))        cfg.stopTime        = j["stopTime"];
                         if (j.contains("deadzone"))        cfg.deadzone        = j["deadzone"];
                         if (j.contains("smoothingFactor")) cfg.smoothingFactor = j["smoothingFactor"];
                         if (j.contains("maxStepPerFrame")) cfg.maxStepPerFrame = j["maxStepPerFrame"];

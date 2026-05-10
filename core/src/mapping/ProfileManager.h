@@ -39,6 +39,10 @@ public:
                 if (m.contains("sensitivityY"))    cfg.sensitivityY    = m["sensitivityY"].get<float>();
                 if (m.contains("exponent"))        cfg.exponent        = m["exponent"].get<float>();
                 if (m.contains("maxSpeed"))        cfg.maxSpeed        = m["maxSpeed"].get<float>();
+                if (m.contains("velocityMode"))    cfg.velocityMode    = m["velocityMode"].get<bool>();
+                if (m.contains("velocityScale"))   cfg.velocityScale   = m["velocityScale"].get<float>();
+                if (m.contains("responseTime"))    cfg.responseTime    = m["responseTime"].get<float>();
+                if (m.contains("stopTime"))        cfg.stopTime        = m["stopTime"].get<float>();
                 if (m.contains("deadzone"))        cfg.deadzone        = m["deadzone"].get<float>();
                 if (m.contains("smoothingFactor")) cfg.smoothingFactor = m["smoothingFactor"].get<float>();
                 if (m.contains("maxStepPerFrame")) cfg.maxStepPerFrame = m["maxStepPerFrame"].get<float>();
