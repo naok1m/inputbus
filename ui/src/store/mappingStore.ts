@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 
 export interface Binding { target: string; mask?: number; axisValue?: number; }
 
+export type ControllerType = 'xbox360' | 'dualsense' | 'vader4pro' | 'steamInput';
+
 export interface AccelPoint {
   speed: number;  // Mouse speed in px/tick
   mult:  number;  // Sensitivity multiplier at this speed
@@ -269,10 +271,12 @@ const buildProfilePayload = (
   name: string,
   bindings: Record<number, Binding>,
   mouseBindings: Record<number, Binding>,
-  cfg: MouseConfig
+  cfg: MouseConfig,
+  controllerType: ControllerType
 ) => ({
   profileName: name,
   version: '2.0',
+  controllerType,
   keyBindings: bindings,
   mouseBindings,
   mouse: { ...cfg },
@@ -291,7 +295,7 @@ interface MappingStore {
   bindings:      Record<number, Binding>;
   mouseBindings: Record<number, Binding>;
   mouseConfig:   MouseConfig;
-  controllerType: 'xbox360' | 'dualsense' | 'vader4pro';
+  controllerType: ControllerType;
   activeProfile: string;
   savedProfiles: string[];
   captureEnabled:  boolean;
@@ -307,7 +311,7 @@ interface MappingStore {
   unbindMouseByMask:      (mask: number) => void;
   unbindMouseByTarget:    (target: string) => void;
   setMouseConfig:         (cfg: MouseConfig) => void;
-  setControllerType:      (type: 'xbox360' | 'dualsense' | 'vader4pro') => void;
+  setControllerType:      (type: ControllerType) => void;
   setCaptureEnabled:      (enabled: boolean) => void;
   setCaptureEnabledFromCore: (enabled: boolean) => void;
   setCoreConnected:       (connected: boolean) => void;
@@ -484,6 +488,7 @@ export const useBindingStore = create<MappingStore>()(
 
       setControllerType: (type) => {
         set({ controllerType: type });
+        get().syncToCore();
       },
 
       setCaptureEnabled: (enabled) => {
@@ -510,7 +515,7 @@ export const useBindingStore = create<MappingStore>()(
         if (!trimmed) return;
         const { bindings, mouseBindings, mouseConfig } = get();
         localStorage.setItem(`profile_${trimmed}`, JSON.stringify(
-          buildProfilePayload(trimmed, bindings, mouseBindings, mouseConfig)
+          buildProfilePayload(trimmed, bindings, mouseBindings, mouseConfig, get().controllerType)
         ));
         set({ activeProfile: trimmed, savedProfiles: listSavedProfileNames() });
       },
@@ -524,6 +529,7 @@ export const useBindingStore = create<MappingStore>()(
         const resolvedBindings     = data.bindings      ?? data.keyBindings   ?? {};
         const resolvedMouseBindings = data.mouseBindings ?? {};
         const rawMouse             = { ...(data.mouse ?? data.mouseConfig ?? {}), ...(data.mouseCamera ?? {}) };
+        const resolvedControllerType = (data.controllerType ?? 'vader4pro') as ControllerType;
 
         // Migrate legacy fields
         const resolvedMouse: MouseConfig = {
@@ -539,9 +545,9 @@ export const useBindingStore = create<MappingStore>()(
             : {}),
         };
 
-        set({ bindings: resolvedBindings, mouseBindings: resolvedMouseBindings, mouseConfig: resolvedMouse, activeProfile: trimmed });
+        set({ bindings: resolvedBindings, mouseBindings: resolvedMouseBindings, mouseConfig: resolvedMouse, controllerType: resolvedControllerType, activeProfile: trimmed });
         window.electronAPI?.coreSend(MsgType.LoadProfile,
-          buildProfilePayload(trimmed, resolvedBindings, resolvedMouseBindings, resolvedMouse));
+          buildProfilePayload(trimmed, resolvedBindings, resolvedMouseBindings, resolvedMouse, resolvedControllerType));
         get().syncToCore();
       },
 
@@ -552,7 +558,7 @@ export const useBindingStore = create<MappingStore>()(
       syncToCore: () => {
         const { bindings, mouseBindings, mouseConfig, activeProfile } = get();
         window.electronAPI?.coreSend(MsgType.SetActiveProfile,
-          buildProfilePayload(activeProfile, bindings, mouseBindings, mouseConfig));
+          buildProfilePayload(activeProfile, bindings, mouseBindings, mouseConfig, get().controllerType));
         syncAllMacrosToCore(get);
       },
 
@@ -618,8 +624,7 @@ export const useBindingStore = create<MappingStore>()(
               }
             }
           }
-          // Migrate controller type to Vader 4 Pro
-          if ((state.controllerType as string) === 'xbox360' || (state.controllerType as string) === 'dualsense') {
+          if (state.controllerType == null) {
             state.controllerType = 'vader4pro';
           }
         }

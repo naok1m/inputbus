@@ -92,6 +92,14 @@ static std::atomic<int>   g_autoLootDurationMs{30};
 static std::atomic<int>   g_hotkeyVk{0x77};            // VK_F8
 static std::atomic<int>   g_hotkeyMods{0x01};          // 0x01=Shift, 0x02=Ctrl, 0x04=Alt
 
+static VirtualControllerType ParseControllerType(const nlohmann::json& j) {
+    const std::string type = j.value("controllerType", "xbox360");
+    if (type == "steamInput" || type == "dualsense" || type == "dualshock4" || type == "ds4") {
+        return VirtualControllerType::DualShock4;
+    }
+    return VirtualControllerType::Xbox360;
+}
+
 // ============================================================================
 // MOUSE BLOCKING — hides cursor & blocks legacy mouse from reaching games
 // ============================================================================
@@ -235,11 +243,13 @@ int main() {
                             file = (std::filesystem::path("profiles") / j["profileFile"].get<std::string>()).string();
 
                         if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            vigem.SetControllerType(ParseControllerType(j));
                             g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                             if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
                         }
                         if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            vigem.SetControllerType(ParseControllerType(j));
                             g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                             if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
@@ -254,6 +264,10 @@ int main() {
                               << " hasW=" << g_mapper.HasKeyBinding(87)
                               << " hasA=" << g_mapper.HasKeyBinding(65) << "\n";
                     if (ok) {
+                        try {
+                            auto j = json::parse(payload);
+                            vigem.SetControllerType(ParseControllerType(j));
+                        } catch (...) {}
                         g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                         if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                     }

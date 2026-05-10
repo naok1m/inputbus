@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { useBindingStore } from './store/mappingStore';
+import { ControllerType, useBindingStore } from './store/mappingStore';
 import { GamepadPreview } from './components/GamepadPreview';
 import { SensitivityEditor } from './components/SensitivityEditor';
 import { KeyMapper } from './components/KeyMapper';
@@ -28,7 +28,10 @@ const CONTROLLER_NAMES: Record<string, string> = {
   vader4pro: 'Vader 4 Pro',
   xbox360: 'Xbox 360',
   dualsense: 'DualSense',
+  steamInput: 'Steam Input',
 };
+
+const CONTROLLER_TYPES: ControllerType[] = ['vader4pro', 'xbox360', 'dualsense', 'steamInput'];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('overview');
@@ -112,7 +115,7 @@ export default function App() {
             </button>
             {ctrlOpen && (
               <div className="ctx-dropdown-panel">
-                {(['vader4pro', 'xbox360', 'dualsense'] as const).map(t => (
+                {CONTROLLER_TYPES.map(t => (
                   <button
                     key={t}
                     className={`ctx-dropdown-item ${controllerType === t ? 'active' : ''}`}

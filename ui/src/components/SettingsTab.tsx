@@ -1,12 +1,15 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useBindingStore } from '../store/mappingStore';
-import type { MouseConfig } from '../store/mappingStore';
+import type { ControllerType, MouseConfig } from '../store/mappingStore';
 
 const CONTROLLER_NAMES: Record<string, string> = {
   vader4pro: 'Vader 4 Pro',
   xbox360: 'Xbox 360',
   dualsense: 'DualSense',
+  steamInput: 'Steam Input',
 };
+
+const CONTROLLER_TYPES: ControllerType[] = ['vader4pro', 'xbox360', 'dualsense', 'steamInput'];
 
 const VK_LABELS: Record<number, string> = {
   0x70:'F1',0x71:'F2',0x72:'F3',0x73:'F4',0x74:'F5',0x75:'F6',
@@ -101,15 +104,15 @@ export function SettingsTab() {
         <div className="settings-row">
           <div>
             <div className="settings-row-label">Emulated Controller</div>
-            <div className="settings-row-desc">Choose which controller type to emulate via ViGEm</div>
+            <div className="settings-row-desc">Steam Input uses a virtual DS4 handoff for Steam remapping</div>
           </div>
           <select
             value={controllerType}
-            onChange={e => setControllerType(e.target.value as 'xbox360' | 'dualsense' | 'vader4pro')}
+            onChange={e => setControllerType(e.target.value as ControllerType)}
             style={{ width: 180 }}
           >
-            {Object.entries(CONTROLLER_NAMES).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {CONTROLLER_TYPES.map(val => (
+              <option key={val} value={val}>{CONTROLLER_NAMES[val]}</option>
             ))}
           </select>
         </div>
