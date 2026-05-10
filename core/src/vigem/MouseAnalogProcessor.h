@@ -58,6 +58,7 @@ struct AnalogCurveConfig {
     bool  velocityMode    = true;
     float velocityScale   = 0.025f; // normalized stick per px/tick at sens=1
     float responseTime    = 0.004f; // seconds to catch up while moving
+    float velocityHoldTime = 0.018f; // seconds to preserve intent between tiny deltas
     float stopTime        = 0.002f; // seconds to return to neutral after input
 
     // --- Deadzone ---
@@ -140,6 +141,9 @@ private:
 
     float m_smoothedX = 0.0f;
     float m_smoothedY = 0.0f;
+
+    float m_velocityTargetX = 0.0f;
+    float m_velocityTargetY = 0.0f;
 
     float m_idleTime = 0.0f;
 

@@ -24,6 +24,7 @@ const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
     fields: [
       { key: 'velocityScale', label: 'Velocity Scale', min: 0.001, max: 0.05, step: 0.001 },
       { key: 'responseTime',  label: 'Response Time',  min: 0,     max: 0.03, step: 0.001, unit: 's' },
+      { key: 'velocityHoldTime', label: 'Hold Time',    min: 0,     max: 0.06, step: 0.001, unit: 's' },
       { key: 'stopTime',      label: 'Stop Time',      min: 0,     max: 0.03, step: 0.001, unit: 's' },
     ],
   },

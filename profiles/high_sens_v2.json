@@ -12,6 +12,7 @@
                   "velocityMode":  true,
                   "velocityScale":  0.025,
                   "responseTime":  0.003,
+                  "velocityHoldTime":  0.016,
                   "stopTime":  0.002,
                   "acceleration":  15.0,
                   "deceleration":  20.0,

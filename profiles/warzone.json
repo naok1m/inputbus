@@ -13,6 +13,7 @@
                   "velocityMode":  true,
                   "velocityScale":  0.025,
                   "responseTime":  0.004,
+                  "velocityHoldTime":  0.022,
                   "stopTime":  0.002,
                   "deadzone":  0,
                   "jitterThreshold":  0.1,

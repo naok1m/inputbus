@@ -42,6 +42,7 @@ public:
                 if (m.contains("velocityMode"))    cfg.velocityMode    = m["velocityMode"].get<bool>();
                 if (m.contains("velocityScale"))   cfg.velocityScale   = m["velocityScale"].get<float>();
                 if (m.contains("responseTime"))    cfg.responseTime    = m["responseTime"].get<float>();
+                if (m.contains("velocityHoldTime")) cfg.velocityHoldTime = m["velocityHoldTime"].get<float>();
                 if (m.contains("stopTime"))        cfg.stopTime        = m["stopTime"].get<float>();
                 if (m.contains("deadzone"))        cfg.deadzone        = m["deadzone"].get<float>();
                 if (m.contains("smoothingFactor")) cfg.smoothingFactor = m["smoothingFactor"].get<float>();
