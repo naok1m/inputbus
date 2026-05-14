@@ -37,7 +37,7 @@ bool MappingEngine::OnKeyEvent(uint32_t vkCode, bool pressed, GamepadState& stat
     if (pressed) m_pressedKeys.insert(vkCode);
     else m_pressedKeys.erase(vkCode);
 
-    ApplyBinding(it->second, pressed, state);
+    RecomputeDigitalState(state);
 
     if (it->second.target == TargetType::LeftStickX || it->second.target == TargetType::LeftStickY) {
         RecomputeLeftStick(state);
@@ -49,28 +49,58 @@ bool MappingEngine::OnKeyEvent(uint32_t vkCode, bool pressed, GamepadState& stat
 bool MappingEngine::OnMouseButton(int btn, bool pressed, GamepadState& state) {
     auto it = m_mouseMap.find(btn);
     if (it == m_mouseMap.end()) return false;
-    ApplyBinding(it->second, pressed, state);
+    if (pressed) m_pressedMouseButtons.insert(btn);
+    else m_pressedMouseButtons.erase(btn);
+    RecomputeDigitalState(state);
     return true;
 }
 
-void MappingEngine::ApplyBinding(const Binding& b, bool pressed, GamepadState& state) {
-    switch (b.target) {
-        case TargetType::Button:
-            if (pressed) state.buttons |= b.buttonMask;
-            else         state.buttons &= ~b.buttonMask;
-            break;
-        case TargetType::LeftTrigger:
-            state.leftTrigger = pressed ? static_cast<uint8_t>(b.axisValue * 255.f) : 0;
-            break;
-        case TargetType::RightTrigger:
-            state.rightTrigger = pressed ? static_cast<uint8_t>(b.axisValue * 255.f) : 0;
-            break;
-        case TargetType::LeftStickX:
-        case TargetType::LeftStickY:
-            // Axis is recomputed from all currently pressed keys.
-            break;
-        default: break;
-    }
+bool MappingEngine::GetMouseWheelBinding(int delta, Binding& out) const {
+    const int wheelCode = delta > 0 ? 5 : 6;
+    auto it = m_mouseMap.find(wheelCode);
+    if (it == m_mouseMap.end()) return false;
+    out = it->second;
+    return true;
+}
+
+void MappingEngine::RecomputeDigitalState(GamepadState& state) {
+    uint16_t mappedButtonMask = 0;
+    uint16_t activeButtons = 0;
+    uint8_t activeLT = 0;
+    uint8_t activeRT = 0;
+    bool hasLT = false;
+    bool hasRT = false;
+
+    auto scan = [&](const auto& map, const auto& pressedSet) {
+        for (const auto& [source, bind] : map) {
+            if (bind.target == TargetType::Button) {
+                mappedButtonMask |= bind.buttonMask;
+            } else if (bind.target == TargetType::LeftTrigger) {
+                hasLT = true;
+            } else if (bind.target == TargetType::RightTrigger) {
+                hasRT = true;
+            }
+
+            if (pressedSet.find(source) == pressedSet.end()) continue;
+
+            if (bind.target == TargetType::Button) {
+                activeButtons |= bind.buttonMask;
+            } else if (bind.target == TargetType::LeftTrigger) {
+                const auto value = static_cast<uint8_t>(std::clamp(bind.axisValue, 0.0f, 1.0f) * 255.0f);
+                activeLT = std::max(activeLT, value);
+            } else if (bind.target == TargetType::RightTrigger) {
+                const auto value = static_cast<uint8_t>(std::clamp(bind.axisValue, 0.0f, 1.0f) * 255.0f);
+                activeRT = std::max(activeRT, value);
+            }
+        }
+    };
+
+    scan(m_keyMap, m_pressedKeys);
+    scan(m_mouseMap, m_pressedMouseButtons);
+
+    state.buttons = static_cast<uint16_t>((state.buttons & ~mappedButtonMask) | activeButtons);
+    if (hasLT) state.leftTrigger = activeLT;
+    if (hasRT) state.rightTrigger = activeRT;
 }
 
 void MappingEngine::RecomputeLeftStick(GamepadState& state) {
@@ -131,6 +161,7 @@ void MappingEngine::LoadFromJson(const std::string& jsonStr) {
     
     ClearBindings();
     m_pressedKeys.clear();
+    m_pressedMouseButtons.clear();
 
     if (j.contains("keyBindings") && j["keyBindings"].is_object()) {
         for (auto& [vk, bindJson] : j["keyBindings"].items()) {

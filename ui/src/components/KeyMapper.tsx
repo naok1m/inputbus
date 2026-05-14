@@ -3,7 +3,8 @@ import { useBindingStore, Binding } from '../store/mappingStore';
 
 const VK_NAMES: Record<number, string> = {
   8:'Backspace', 9:'Tab', 13:'Enter', 16:'Shift', 17:'Ctrl', 18:'Alt',
-  20:'CapsLock', 27:'Esc', 32:'Space', 33:'PgUp', 34:'PgDn', 37:'←', 38:'↑', 39:'→', 40:'↓',
+  20:'CapsLock', 27:'Esc', 32:'Space', 33:'PgUp', 34:'PgDn',
+  37:'Left', 38:'Up', 39:'Right', 40:'Down',
   48:'0', 49:'1', 50:'2', 51:'3', 52:'4', 53:'5', 54:'6', 55:'7', 56:'8', 57:'9',
   65:'A', 66:'B', 67:'C', 68:'D', 69:'E', 70:'F', 71:'G', 72:'H',
   73:'I', 74:'J', 75:'K', 76:'L', 77:'M', 78:'N', 79:'O', 80:'P',
@@ -21,10 +22,11 @@ const VK_NAMES: Record<number, string> = {
 const vkName = (vk: number) => VK_NAMES[vk] ?? `VK ${vk}`;
 
 const MOUSE_LABELS: Record<number, string> = {
-  0: 'Left Click', 1: 'Right Click', 2: 'Middle Click', 3: 'Mouse 4', 4: 'Mouse 5'
+  0: 'Left Click', 1: 'Right Click', 2: 'Middle Click', 3: 'Mouse 4', 4: 'Mouse 5',
+  5: 'Wheel Up', 6: 'Wheel Down',
 };
 
-// Browser MouseEvent.button → Core button index
+// Browser MouseEvent.button -> core button index
 // Browser: 0=LMB, 1=MMB, 2=RMB, 3=X1, 4=X2
 // Core:    0=LMB, 1=RMB, 2=MMB, 3=X1, 4=X2
 const toCoreBtn = (b: number): number | null => {
@@ -36,7 +38,7 @@ const toCoreBtn = (b: number): number | null => {
   return null;
 };
 
-// ── Button definitions grouped by category ──
+// Button definitions grouped by category
 type BindingItem = {
   type: 'button';
   mask: number;
@@ -58,7 +60,7 @@ interface BindingGroup {
 const BINDING_GROUPS: BindingGroup[] = [
   {
     title: 'Face Buttons',
-    icon: '✦',
+    icon: '*',
     items: [
       { type: 'button', mask: 0x1000, label: 'A', color: '#4ade80' },
       { type: 'button', mask: 0x2000, label: 'B', color: '#f87171' },
@@ -68,7 +70,7 @@ const BINDING_GROUPS: BindingGroup[] = [
   },
   {
     title: 'Bumpers & Triggers',
-    icon: '⊓',
+    icon: 'LT',
     items: [
       { type: 'button',  mask: 0x0100, label: 'LB', color: '#a78bfa' },
       { type: 'button',  mask: 0x0200, label: 'RB', color: '#a78bfa' },
@@ -78,17 +80,17 @@ const BINDING_GROUPS: BindingGroup[] = [
   },
   {
     title: 'D-Pad',
-    icon: '✛',
+    icon: '+',
     items: [
-      { type: 'button', mask: 0x0001, label: '↑' },
-      { type: 'button', mask: 0x0002, label: '↓' },
-      { type: 'button', mask: 0x0004, label: '←' },
-      { type: 'button', mask: 0x0008, label: '→' },
+      { type: 'button', mask: 0x0001, label: 'Up' },
+      { type: 'button', mask: 0x0002, label: 'Down' },
+      { type: 'button', mask: 0x0004, label: 'Left' },
+      { type: 'button', mask: 0x0008, label: 'Right' },
     ],
   },
   {
     title: 'System',
-    icon: '◎',
+    icon: 'O',
     items: [
       { type: 'button', mask: 0x0010, label: 'Start' },
       { type: 'button', mask: 0x0020, label: 'Back' },
@@ -98,7 +100,7 @@ const BINDING_GROUPS: BindingGroup[] = [
   },
 ];
 
-// ── Component ──
+// Component
 
 export function KeyMapper() {
   const {
@@ -110,12 +112,12 @@ export function KeyMapper() {
   const [listening, setListening] = useState<string | null>(null);
   const [mode, setMode] = useState<'keyboard' | 'mouse'>('keyboard');
 
-  // Find bound key/mouse for a button item
-  const findBound = (item: BindingItem, source: Record<number, Binding>) => {
+  // Find bound keys/mouse inputs for a button item
+  const findBounds = (item: BindingItem, source: Record<number, Binding>) => {
     if (item.type === 'button') {
-      return Object.entries(source).find(([, b]) => b.target === 'button' && b.mask === item.mask);
+      return Object.entries(source).filter(([, b]) => b.target === 'button' && b.mask === item.mask);
     } else {
-      return Object.entries(source).find(([, b]) => b.target === item.target);
+      return Object.entries(source).filter(([, b]) => b.target === item.target);
     }
   };
 
@@ -146,11 +148,7 @@ export function KeyMapper() {
     const ctxBlock = (e: Event) => e.preventDefault();
     window.addEventListener('contextmenu', ctxBlock, true);
 
-    const h = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const btn = toCoreBtn(e.button);
-      if (btn == null) return;
+    const finish = (btn: number) => {
       if (item.type === 'button') {
         setMouseBinding(btn, { target: 'button', mask: item.mask });
       } else {
@@ -158,9 +156,26 @@ export function KeyMapper() {
       }
       setListening(null);
       window.removeEventListener('mousedown', h, true);
+      window.removeEventListener('wheel', wheelH, true);
       window.removeEventListener('contextmenu', ctxBlock, true);
     };
+
+    const h = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const btn = toCoreBtn(e.button);
+      if (btn == null) return;
+      finish(btn);
+    };
+
+    const wheelH = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      finish(e.deltaY < 0 ? 5 : 6);
+    };
+
     window.addEventListener('mousedown', h, true);
+    window.addEventListener('wheel', wheelH, true);
   }, [setMouseBinding]);
 
   const handleUnbind = (item: BindingItem) => {
@@ -185,20 +200,20 @@ export function KeyMapper() {
             className={`mode-btn ${mode === 'keyboard' ? 'active' : ''}`}
             onClick={() => setMode('keyboard')}
           >
-            <span className="mode-icon">⌨</span> Keyboard
+            <span className="mode-icon">KB</span> Keyboard
           </button>
           <button
             className={`mode-btn ${mode === 'mouse' ? 'active' : ''}`}
             onClick={() => setMode('mouse')}
           >
-            <span className="mode-icon">🖱</span> Mouse
+            <span className="mode-icon">M</span> Mouse
           </button>
         </div>
       </div>
 
       <div className="bindings-hint">
         {isMouseMode
-          ? 'Click a slot then press any mouse button to bind'
+          ? 'Click a slot then press any mouse button or scroll wheel to bind'
           : 'Click a slot then press any key to bind'
         }
       </div>
@@ -215,16 +230,20 @@ export function KeyMapper() {
                 const id = getItemId(item);
                 const listenId = isMouseMode ? `m-${id}` : id;
                 const isLis = listening === listenId;
-                const bound = findBound(item, source);
+                const bounds = findBounds(item, source);
+                const isBound = bounds.length > 0;
 
                 let slotText = 'Not bound';
                 if (isLis) {
-                  slotText = isMouseMode ? 'Click mouse button…' : 'Press a key…';
-                } else if (bound) {
-                  const k = Number(bound[0]);
-                  slotText = isMouseMode
-                    ? (MOUSE_LABELS[k] ?? `BTN${k}`)
-                    : vkName(k);
+                  slotText = isMouseMode ? 'Click mouse button or scroll wheel...' : 'Press a key...';
+                } else if (isBound) {
+                  const labels = bounds.map(([code]) => {
+                    const k = Number(code);
+                    return isMouseMode ? (MOUSE_LABELS[k] ?? `BTN${k}`) : vkName(k);
+                  });
+                  slotText = labels.length > 2
+                    ? `${labels.slice(0, 2).join(', ')} +${labels.length - 2}`
+                    : labels.join(', ');
                 }
 
                 const isTrigger = item.type === 'trigger';
@@ -243,15 +262,15 @@ export function KeyMapper() {
                       </svg>
                     </div>
                     <button
-                      className={`binding-slot ${isLis ? 'listening' : ''} ${bound && !isLis ? 'bound' : ''}`}
+                      className={`binding-slot ${isLis ? 'listening' : ''} ${isBound && !isLis ? 'bound' : ''}`}
                       onClick={() => isMouseMode ? startMouseListen(item) : startKeyListen(item)}
                     >
                       <span className="binding-slot-text">{slotText}</span>
-                      {bound && !isLis && <span className="binding-slot-indicator" />}
+                      {isBound && !isLis && <span className="binding-slot-indicator" />}
                     </button>
                     <button
                       className="binding-unbind"
-                      disabled={!bound}
+                      disabled={!isBound}
                       onClick={() => handleUnbind(item)}
                       title="Remove binding"
                     >
@@ -269,3 +288,4 @@ export function KeyMapper() {
     </div>
   );
 }
+

@@ -85,6 +85,16 @@
                                     "target":  "button",
                                     "mask":  16384,
                                     "label":  "Mouse Lateral 2 (X2) -\u003e X"
+                                },
+                          "5":  {
+                                    "target":  "button",
+                                    "mask":  32768,
+                                    "label":  "Wheel Up -> Y"
+                                },
+                          "6":  {
+                                    "target":  "button",
+                                    "mask":  32768,
+                                    "label":  "Wheel Down -> Y"
                                 }
                       },
     "mouseCamera":  {

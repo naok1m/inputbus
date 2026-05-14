@@ -97,7 +97,6 @@ function MacroConfigPanel({ macro, onClose }: { macro: MacroDef; onClose: () => 
   const isSensBoost = macro.id === 'sens-boost';
   const isDriftAim = macro.id === 'drift-aim';
   const isYYSwap = macro.id === 'yy-swap';
-  const isScrollSwap = macro.id === 'scroll-swap';
   const isTabScore = macro.id === 'tab-score';
   const isAutoAds = macro.id === 'auto-ads';
   const isAutoSprint = macro.id === 'auto-sprint';
@@ -339,37 +338,6 @@ function MacroConfigPanel({ macro, onClose }: { macro: MacroDef; onClose: () => 
             </div>
           )}
 
-          {/* Scroll Weapon Swap config */}
-          {isScrollSwap && (
-            <div>
-              <div className="macro-panel-section-title">Configuration</div>
-              <div className="macro-row">
-                <span className="slider-label">Swap Button</span>
-                <select
-                  value={Number(config.button ?? 0x8000)}
-                  onChange={e => updateMacroConfig(macro.id, { button: Number(e.target.value) })}
-                  style={{ flex: 1 }}
-                >
-                  {BUTTON_OPTIONS.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="slider-row">
-                <span className="slider-label">Press Time</span>
-                <input
-                  type="range" min={20} max={120} step={5}
-                  value={Number(config.durationMs ?? 45)}
-                  onChange={e => updateMacroConfig(macro.id, { durationMs: Number(e.target.value) })}
-                />
-                <span className="slider-value">{Number(config.durationMs ?? 45)}ms</span>
-              </div>
-              <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                Scroll up or down to tap the selected controller button once.
-              </p>
-            </div>
-          )}
-
           {/* Tab Scoreboard config */}
           {isTabScore && (
             <div>
@@ -481,7 +449,7 @@ function MacroConfigPanel({ macro, onClose }: { macro: MacroDef; onClose: () => 
           )}
 
           {/* Generic config for other macros */}
-          {!isAutoPing && !isRapidFire && !isNoRecoil && !isSensBoost && !isDriftAim && !isYYSwap && !isScrollSwap && !isTabScore && !isAutoAds && !isAutoSprint && !isBunnyHop && !isAutoLoot && (
+          {!isAutoPing && !isRapidFire && !isNoRecoil && !isSensBoost && !isDriftAim && !isYYSwap && !isTabScore && !isAutoAds && !isAutoSprint && !isBunnyHop && !isAutoLoot && (
             <div>
               <div className="macro-panel-section-title">Configuration</div>
               {config.intervalMs != null && (

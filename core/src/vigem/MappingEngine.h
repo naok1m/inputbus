@@ -20,6 +20,7 @@ public:
     // Returns updated gamepad state after processing event
     bool OnKeyEvent(uint32_t vkCode, bool pressed, GamepadState& state);
     bool OnMouseButton(int btn, bool pressed, GamepadState& state);
+    bool GetMouseWheelBinding(int delta, Binding& out) const;
 
     bool HasKeyBinding(uint32_t vkCode) const { return m_keyMap.find(vkCode) != m_keyMap.end(); }
     bool HasMouseBinding(int btn) const { return m_mouseMap.find(btn) != m_mouseMap.end(); }
@@ -35,10 +36,11 @@ public:
     std::string SaveToJson() const;
 
 private:
-    void ApplyBinding(const Binding& b, bool pressed, GamepadState& state);
+    void RecomputeDigitalState(GamepadState& state);
     void RecomputeLeftStick(GamepadState& state);
     
     std::unordered_map<uint32_t, Binding> m_keyMap;
     std::unordered_map<int,      Binding> m_mouseMap;
     std::unordered_set<uint32_t> m_pressedKeys;
+    std::unordered_set<int>      m_pressedMouseButtons;
 };

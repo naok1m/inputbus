@@ -120,15 +120,6 @@ const DEFAULT_MACROS: MacroDef[] = [
     config: { key: 0x46, delayMs: 80 },
   },
   {
-    id: 'scroll-swap',
-    name: 'Scroll Swap',
-    icon: '\u21C5',
-    category: 'combat',
-    description: 'Mouse wheel up/down taps Y to swap weapons',
-    enabled: true,
-    config: { button: 0x8000, durationMs: 45 },
-  },
-  {
     id: 'tab-score',
     name: 'Tab Scoreboard',
     icon: '\u{1F4CB}',
@@ -270,6 +261,8 @@ const WARZONE_BINDINGS: Record<number, Binding> = {
 const WARZONE_MOUSE_BINDINGS: Record<number, Binding> = {
   0: { target: 'rightTrigger', axisValue: 1.0 },  // LMB → RT (Fire)
   1: { target: 'leftTrigger',  axisValue: 1.0 },  // RMB → LT (ADS)
+  5: { target: 'button', mask: 0x8000 },          // Wheel Up -> Y (Swap)
+  6: { target: 'button', mask: 0x8000 },          // Wheel Down -> Y (Swap)
 };
 
 const MsgType = {
@@ -378,11 +371,6 @@ function buildMacroPayload(macro: MacroDef): Record<string, unknown> | null {
       yyEnabled: macro.enabled,
       yyKey: cfg.key ?? 0x46,
       yyDelayMs: cfg.delayMs ?? 80,
-    },
-    'scroll-swap': {
-      scrollSwapEnabled: macro.enabled,
-      scrollSwapButton: cfg.button ?? 0x8000,
-      scrollSwapDurationMs: cfg.durationMs ?? 45,
     },
     'tab-score': {
       tabScoreEnabled: macro.enabled,
@@ -635,6 +623,7 @@ export const useBindingStore = create<MappingStore>()(
           if (!Array.isArray(state.macros) || state.macros.length === 0) {
             state.macros = DEFAULT_MACROS.map(m => ({ ...m }));
           } else {
+            state.macros = state.macros.filter((m: MacroDef) => m.id !== 'scroll-swap');
             // Merge new defaults that may have been added
             for (const def of DEFAULT_MACROS) {
               if (!state.macros.find((m: MacroDef) => m.id === def.id)) {

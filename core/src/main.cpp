@@ -61,10 +61,8 @@ static std::atomic<bool>  g_yyEnabled{false};
 static std::atomic<int>   g_yyKey{0x46};               // default: F key
 static std::atomic<int>   g_yyDelayMs{80};             // delay between presses
 
-static std::atomic<bool>  g_scrollSwapEnabled{true};
-static std::atomic<int>   g_scrollSwapButton{0x8000};  // Y button
-static std::atomic<int>   g_scrollSwapDurationMs{45};
-static std::atomic<bool>  g_scrollSwapRequested{false};
+static Binding            g_wheelPulseBinding{};
+static bool               g_wheelPulseRequested = false;
 
 // Tab scoreboard — hold Tab to press Back (scoreboard)
 static std::atomic<bool>  g_tabScoreEnabled{false};
@@ -425,13 +423,6 @@ int main() {
                         if (j.contains("yyDelayMs"))
                             g_yyDelayMs.store(j["yyDelayMs"].get<int>());
 
-                        if (j.contains("scrollSwapEnabled"))
-                            g_scrollSwapEnabled.store(j["scrollSwapEnabled"].get<bool>());
-                        if (j.contains("scrollSwapButton"))
-                            g_scrollSwapButton.store(j["scrollSwapButton"].get<int>());
-                        if (j.contains("scrollSwapDurationMs"))
-                            g_scrollSwapDurationMs.store(j["scrollSwapDurationMs"].get<int>());
-
                         // Tab scoreboard
                         if (j.contains("tabScoreEnabled"))
                             g_tabScoreEnabled.store(j["tabScoreEnabled"].get<bool>());
@@ -525,8 +516,9 @@ int main() {
             float yyTimer = 0.0f;
             bool  yyKeyWasDown = false;
 
-            bool  scrollSwapHolding = false;
-            float scrollSwapTimer = 0.0f;
+            Binding wheelPulseBinding{};
+            bool  wheelPulseHolding = false;
+            float wheelPulseTimer = 0.0f;
 
             // No-recoil macro state
             bool  nrLmbWasDown = false;
@@ -700,27 +692,34 @@ int main() {
                     }
 
                     // ── Tab scoreboard — hold Tab → hold Back button ──
-                    // Scroll weapon swap - mouse wheel up/down taps Y
-                    if (g_scrollSwapEnabled.load() && g_captureEnabled.load()) {
-                        const uint16_t swapBtn = static_cast<uint16_t>(g_scrollSwapButton.load());
-                        const float duration = g_scrollSwapDurationMs.load() / 1000.0f;
-
-                        if (g_scrollSwapRequested.exchange(false, std::memory_order_relaxed)) {
-                            scrollSwapHolding = true;
-                            scrollSwapTimer = 0.0f;
+                    // Mouse wheel bindings are pulses because wheel has no key-up event.
+                    if (g_captureEnabled.load()) {
+                        if (g_wheelPulseRequested) {
+                            wheelPulseBinding = g_wheelPulseBinding;
+                            g_wheelPulseRequested = false;
+                            wheelPulseHolding = true;
+                            wheelPulseTimer = 0.0f;
                         }
 
-                        if (scrollSwapHolding) {
-                            g_gamepadState.buttons |= swapBtn;
-                            scrollSwapTimer += dt;
-                            if (scrollSwapTimer >= duration) {
-                                scrollSwapHolding = false;
-                                g_gamepadState.buttons &= ~swapBtn;
+                        if (wheelPulseHolding) {
+                            if (wheelPulseBinding.target == TargetType::Button) {
+                                g_gamepadState.buttons |= wheelPulseBinding.buttonMask;
+                            } else if (wheelPulseBinding.target == TargetType::LeftTrigger) {
+                                const auto value = static_cast<uint8_t>(std::clamp(wheelPulseBinding.axisValue, 0.0f, 1.0f) * 255.0f);
+                                g_gamepadState.leftTrigger = std::max(g_gamepadState.leftTrigger, value);
+                            } else if (wheelPulseBinding.target == TargetType::RightTrigger) {
+                                const auto value = static_cast<uint8_t>(std::clamp(wheelPulseBinding.axisValue, 0.0f, 1.0f) * 255.0f);
+                                g_gamepadState.rightTrigger = std::max(g_gamepadState.rightTrigger, value);
+                            }
+
+                            wheelPulseTimer += dt;
+                            if (wheelPulseTimer >= 0.045f) {
+                                wheelPulseHolding = false;
                             }
                         }
                     } else {
-                        scrollSwapHolding = false;
-                        g_scrollSwapRequested.store(false, std::memory_order_relaxed);
+                        wheelPulseHolding = false;
+                        g_wheelPulseRequested = false;
                     }
 
                     if (g_tabScoreEnabled.load() && g_captureEnabled.load()) {
@@ -996,8 +995,12 @@ int main() {
                     return g_mapper.OnMouseButton(evt.mouseBtn.button, evt.mouseBtn.pressed, g_gamepadState);
 
                 case RawInputType::MouseWheel:
-                    if (g_scrollSwapEnabled.load(std::memory_order_relaxed) && evt.wheel.delta != 0) {
-                        g_scrollSwapRequested.store(true, std::memory_order_relaxed);
+                    if (evt.wheel.delta != 0) {
+                        Binding wheelBinding{};
+                        if (g_mapper.GetMouseWheelBinding(evt.wheel.delta, wheelBinding)) {
+                            g_wheelPulseBinding = wheelBinding;
+                            g_wheelPulseRequested = true;
+                        }
                     }
                     return false;
 
