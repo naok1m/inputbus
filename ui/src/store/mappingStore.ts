@@ -144,7 +144,6 @@ export interface MouseConfig {
   velocityMode:    boolean;
   velocityScale:   number;
   responseTime:    number;
-  velocityHoldTime: number;
   stopTime:        number;
   // Acceleration curve (input-side, speed-dependent sensitivity)
   accelCurve:      AccelPoint[];
@@ -181,7 +180,6 @@ const DEFAULT_CONFIG: MouseConfig = {
   velocityMode:    true,
   velocityScale:   0.025,
   responseTime:    0.004,
-  velocityHoldTime: 0.018,
   stopTime:        0.002,
   accelCurve:      [],
   deadzone:        0.05,
@@ -210,7 +208,6 @@ const WARZONE_CONFIG: MouseConfig = {
   velocityMode:    true,
   velocityScale:   0.025,
   responseTime:    0.004,
-  velocityHoldTime: 0.018,
   stopTime:        0.002,
   accelCurve:      [],
   deadzone:        0.0,
@@ -610,7 +607,6 @@ export const useBindingStore = create<MappingStore>()(
           if (state.mouseConfig.velocityMode == null) state.mouseConfig.velocityMode = true;
           if (state.mouseConfig.velocityScale == null) state.mouseConfig.velocityScale = 0.025;
           if (state.mouseConfig.responseTime == null) state.mouseConfig.responseTime = 0.004;
-          if (state.mouseConfig.velocityHoldTime == null) state.mouseConfig.velocityHoldTime = 0.018;
           if (state.mouseConfig.stopTime == null) state.mouseConfig.stopTime = 0.002;
           if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = false;
           state.mouseConfig.mouseCameraSensitivityX = 1.0;

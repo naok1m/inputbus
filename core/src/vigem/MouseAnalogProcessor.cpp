@@ -107,10 +107,6 @@ void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
             m_idleTime = 0.0f;
         } else {
             m_idleTime += dt;
-            if (m_idleTime < m_cfg.velocityHoldTime) {
-                targetX = m_velocityTargetX;
-                targetY = m_velocityTargetY;
-            }
         }
 
         targetX = std::clamp(targetX, -1.0f, 1.0f);
@@ -124,20 +120,11 @@ void MouseAnalogProcessor::Tick(float deltaTime, int16_t& outX, int16_t& outY) {
             }
         }
 
-        if (hasInput) {
-            m_velocityTargetX = targetX;
-            m_velocityTargetY = targetY;
-        } else if (m_idleTime >= m_cfg.velocityHoldTime) {
-            m_velocityTargetX = 0.0f;
-            m_velocityTargetY = 0.0f;
-        }
-
-        const bool holdingIntent = !hasInput && m_idleTime < m_cfg.velocityHoldTime;
-        const float response = (hasInput || holdingIntent) ? m_cfg.responseTime : m_cfg.stopTime;
+        const float response = hasInput ? m_cfg.responseTime : m_cfg.stopTime;
         const float alpha = (response <= EPSILON) ? 1.0f : (dt / (response + dt));
         m_stickX += (targetX - m_stickX) * alpha;
         m_stickY += (targetY - m_stickY) * alpha;
-        m_debugState.isDecaying = !hasInput && !holdingIntent
+        m_debugState.isDecaying = !hasInput
             && (std::abs(m_stickX) > EPSILON || std::abs(m_stickY) > EPSILON);
     } else {
         const bool shouldDecay = (m_cfg.decayRate > 0.0f)
@@ -263,7 +250,6 @@ void MouseAnalogProcessor::Reset() {
     m_rawAccX = m_rawAccY = 0.0f;
     m_stickX = m_stickY = 0.0f;
     m_smoothedX = m_smoothedY = 0.0f;
-    m_velocityTargetX = m_velocityTargetY = 0.0f;
     m_idleTime = 0.0f;
     std::memset(&m_debugState, 0, sizeof(m_debugState));
 }
@@ -288,7 +274,6 @@ void MouseAnalogProcessor::UpdateConfig(const AnalogCurveConfig& cfg) {
     m_cfg.antiDeadzone    = std::clamp(m_cfg.antiDeadzone,    0.0f,   0.3f);
     m_cfg.velocityScale   = std::clamp(m_cfg.velocityScale,   0.001f, 0.1f);
     m_cfg.responseTime    = std::clamp(m_cfg.responseTime,    0.0f,   0.05f);
-    m_cfg.velocityHoldTime = std::clamp(m_cfg.velocityHoldTime, 0.0f,  0.08f);
     m_cfg.stopTime        = std::clamp(m_cfg.stopTime,        0.0f,   0.05f);
 }
 

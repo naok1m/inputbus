@@ -296,7 +296,6 @@ int main() {
                         if (j.contains("velocityMode"))    cfg.velocityMode    = j["velocityMode"];
                         if (j.contains("velocityScale"))   cfg.velocityScale   = j["velocityScale"];
                         if (j.contains("responseTime"))    cfg.responseTime    = j["responseTime"];
-                        if (j.contains("velocityHoldTime")) cfg.velocityHoldTime = j["velocityHoldTime"];
                         if (j.contains("stopTime"))        cfg.stopTime        = j["stopTime"];
                         if (j.contains("deadzone"))        cfg.deadzone        = j["deadzone"];
                         if (j.contains("smoothingFactor")) cfg.smoothingFactor = j["smoothingFactor"];
