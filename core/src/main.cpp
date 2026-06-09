@@ -48,7 +48,8 @@ static std::atomic<int>   g_rapidFireDurationMs{30};   // press duration per cyc
 // Sensitivity boost (PQD / parachute) — hold key to multiply sensitivity
 static std::atomic<bool>  g_sensBoostEnabled{false};
 static std::atomic<int>   g_sensBoostKey{0x58};        // default: X key (0x58)
-static std::atomic<float> g_sensBoostMultiplier{2.0f};
+static std::atomic<float> g_sensBoostMultiplier{4.0f};
+static std::atomic<bool>  g_sensBoostNativeMouse{true};
 static std::atomic<bool>  g_sensBoostActive{false};    // currently held
 
 // Drift aim macro — oscillates left stick to manipulate aim assist
@@ -405,6 +406,8 @@ int main() {
                             g_sensBoostKey.store(j["sensBoostKey"].get<int>());
                         if (j.contains("sensBoostMultiplier"))
                             g_sensBoostMultiplier.store(j["sensBoostMultiplier"].get<float>());
+                        if (j.contains("sensBoostNativeMouse"))
+                            g_sensBoostNativeMouse.store(j["sensBoostNativeMouse"].get<bool>());
 
                         // Drift aim
                         if (j.contains("driftEnabled"))
@@ -540,6 +543,7 @@ int main() {
             float alTimer = 0.0f;
             float alHoldTimer = 0.0f;
             bool  alHolding = false;
+            bool  lastEffectiveNativeMouseCameraEnabled = g_nativeMouseCameraEnabled.load(std::memory_order_relaxed);
 
             while (running.load()) {
                 const auto now  = Clock::now();
@@ -552,7 +556,20 @@ int main() {
                     if (g_captureEnabled.load())
                         g_mapper.RefreshLeftStickFromKeyboard(g_gamepadState);
 
-                    const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled;
+                    const bool sensBoostEnabled = g_sensBoostEnabled.load() && g_captureEnabled.load();
+                    const bool sensBoostActive = sensBoostEnabled && g_sensBoostActive.load(std::memory_order_relaxed);
+                    const bool sensBoostNativeMouse = sensBoostActive && g_sensBoostNativeMouse.load();
+                    g_mouseProc.SetSensitivityMultiplier(sensBoostActive ? g_sensBoostMultiplier.load() : 1.0f);
+
+                    const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled || sensBoostNativeMouse;
+                    if (nativeMouseCameraEnabled != lastEffectiveNativeMouseCameraEnabled) {
+                        g_nativeMouseCameraEnabled.store(nativeMouseCameraEnabled, std::memory_order_relaxed);
+                        if (g_captureEnabled.load()) EnableMouseBlock();
+                        lastEffectiveNativeMouseCameraEnabled = nativeMouseCameraEnabled;
+                    } else {
+                        g_nativeMouseCameraEnabled.store(nativeMouseCameraEnabled, std::memory_order_relaxed);
+                    }
+
                     if (nativeMouseCameraEnabled) {
                         g_mouseProc.Reset();
                         g_gamepadState.thumbRX = 0;
@@ -618,14 +635,6 @@ int main() {
                     } else {
                         rfTimer = 0.0f;
                         rfHolding = false;
-                    }
-
-                    // ── Sensitivity boost (PQD) ──
-                    if (g_sensBoostEnabled.load() && g_captureEnabled.load()) {
-                        bool keyDown = g_sensBoostActive.load(std::memory_order_relaxed);
-                        g_mouseProc.SetSensitivityMultiplier(keyDown ? g_sensBoostMultiplier.load() : 1.0f);
-                    } else {
-                        g_mouseProc.SetSensitivityMultiplier(1.0f);
                     }
 
                     // ── Drift aim macro — oscillate left stick X only while ADS (LT) ──

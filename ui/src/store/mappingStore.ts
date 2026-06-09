@@ -97,9 +97,9 @@ const DEFAULT_MACROS: MacroDef[] = [
     name: 'PQD Sens Boost',
     icon: '\u{1F4A8}',
     category: 'movement',
-    description: 'Hold a key to multiply sensitivity (parachute drop)',
+    description: 'Hold a key to remove low parachute camera sensitivity',
     enabled: false,
-    config: { key: 0x58, multiplier: 2.0 },
+    config: { key: 0x58, multiplier: 4.0, nativeMouse: true },
   },
   {
     id: 'drift-aim',
@@ -357,7 +357,8 @@ function buildMacroPayload(macro: MacroDef): Record<string, unknown> | null {
     'sens-boost': {
       sensBoostEnabled: macro.enabled,
       sensBoostKey: cfg.key ?? 0x58,
-      sensBoostMultiplier: cfg.multiplier ?? 2.0,
+      sensBoostMultiplier: cfg.multiplier ?? 4.0,
+      sensBoostNativeMouse: cfg.nativeMouse ?? true,
     },
     'drift-aim': {
       driftEnabled: macro.enabled,
