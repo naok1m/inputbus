@@ -52,9 +52,10 @@ const L: Record<string, Layout> = {
   },
 };
 L.dualsense = { ...L.xbox360 };
+L.steamInput = { ...L.xbox360 };
 
 const NAMES: Record<string, string> = {
-  vader4pro: 'Vader 4 Pro', xbox360: 'Xbox 360', dualsense: 'DualSense',
+  vader4pro: 'Vader 4 Pro', xbox360: 'Xbox 360', dualsense: 'DualSense', steamInput: 'Steam Input',
 };
 
 // Glow dot — invisible when off, colored glow when on

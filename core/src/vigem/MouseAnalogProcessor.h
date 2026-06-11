@@ -8,6 +8,7 @@
 #include <chrono>
 #include <mutex>
 #include <array>
+#include <atomic>
 
 // ============================================================================
 // ACCELERATION CURVE — piecewise linear, up to 8 control points
@@ -49,6 +50,15 @@ struct AnalogCurveConfig {
 
     // --- Speed Cap ---
     float maxSpeed        = 1.0f;   // Max normalized output [0, 1]
+
+    // --- Natural mouse model ---
+    // Velocity mode maps mouse speed directly to right-stick deflection instead
+    // of accumulating stick position. This avoids the controller-like ramp/hold
+    // feeling while still outputting a virtual analog stick.
+    bool  velocityMode    = true;
+    float velocityScale   = 0.025f; // normalized stick per px/tick at sens=1
+    float responseTime    = 0.004f; // seconds to catch up while moving
+    float stopTime        = 0.002f; // seconds to return to neutral after input
 
     // --- Deadzone ---
     float deadzone        = 0.05f;  // Circular deadzone; input below this is ignored

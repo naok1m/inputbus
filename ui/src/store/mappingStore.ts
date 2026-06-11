@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 
 export interface Binding { target: string; mask?: number; axisValue?: number; }
 
+export type ControllerType = 'xbox360' | 'dualsense' | 'vader4pro' | 'steamInput';
+
 export interface AccelPoint {
   speed: number;  // Mouse speed in px/tick
   mult:  number;  // Sensitivity multiplier at this speed
@@ -95,9 +97,9 @@ const DEFAULT_MACROS: MacroDef[] = [
     name: 'PQD Sens Boost',
     icon: '\u{1F4A8}',
     category: 'movement',
-    description: 'Hold a key to multiply sensitivity (parachute drop)',
+    description: 'Hold a key to multiply parachute camera sensitivity',
     enabled: false,
-    config: { key: 0x58, multiplier: 2.0 },
+    config: { key: 0x58, multiplier: 8.0 },
   },
   {
     id: 'drift-aim',
@@ -138,6 +140,11 @@ export interface MouseConfig {
   // Response curve
   exponent:        number;
   maxSpeed:        number;
+  // Natural velocity model: maps mouse speed directly to stick deflection
+  velocityMode:    boolean;
+  velocityScale:   number;
+  responseTime:    number;
+  stopTime:        number;
   // Acceleration curve (input-side, speed-dependent sensitivity)
   accelCurve:      AccelPoint[];
   // Deadzone
@@ -170,6 +177,10 @@ const DEFAULT_CONFIG: MouseConfig = {
   sensitivityY:    1.0,
   exponent:        1.0,
   maxSpeed:        1.0,
+  velocityMode:    true,
+  velocityScale:   0.025,
+  responseTime:    0.004,
+  stopTime:        0.002,
   accelCurve:      [],
   deadzone:        0.05,
   smoothingFactor: 0,
@@ -194,6 +205,10 @@ const WARZONE_CONFIG: MouseConfig = {
   sensitivityY:    3.5,
   exponent:        1.0,
   maxSpeed:        1.0,
+  velocityMode:    true,
+  velocityScale:   0.025,
+  responseTime:    0.004,
+  stopTime:        0.002,
   accelCurve:      [],
   deadzone:        0.0,
   smoothingFactor: 0,
@@ -221,20 +236,23 @@ const WARZONE_BINDINGS: Record<number, Binding> = {
   68: { target: 'leftStickX', axisValue:  1.0 },  // D
   // Face Buttons
   32: { target: 'button', mask: 0x1000 },          // Space → A (Jump)
-  67: { target: 'button', mask: 0x2000 },          // C → B (Slide/Prone)
-  82: { target: 'button', mask: 0x4000 },          // R → X (Reload)
-  49: { target: 'button', mask: 0x8000 },          // 1 → Y (Weapon Switch)
+  67: { target: 'button', mask: 0x2000 },          // C -> B (Slide/Prone)
+  17: { target: 'button', mask: 0x2000 },          // Ctrl -> B (Prone)
+  82: { target: 'button', mask: 0x4000 },          // R -> X (Reload)
+  70: { target: 'button', mask: 0x4000 },          // F -> X (Interact)
+  69: { target: 'button', mask: 0x4000 },          // E -> X (Interact fallback)
+  49: { target: 'button', mask: 0x8000 },          // 1 -> Y (Weapon Switch)
   // Bumpers
   81: { target: 'button', mask: 0x0100 },          // Q → LB (Tactical)
   71: { target: 'button', mask: 0x0200 },          // G → RB (Lethal)
   // System
   27: { target: 'button', mask: 0x0010 },          // Esc → Start (Menu)
-  90: { target: 'button', mask: 0x0020 },          // Z → Back (Ping)
+   9: { target: 'button', mask: 0x0020 },          // Tab -> Back/View (Tac Map)
   16: { target: 'button', mask: 0x0040 },          // Shift → LS (Sprint)
   86: { target: 'button', mask: 0x0080 },          // V → RS (Melee)
   // D-Pad
-   9: { target: 'button', mask: 0x0001 },          // Tab → D-Up (Map)
-  50: { target: 'button', mask: 0x0002 },          // 2 → D-Down (Inventory)
+  90: { target: 'button', mask: 0x0001 },          // Z -> D-Up (Ping)
+  50: { target: 'button', mask: 0x8000 },          // 2 -> Y (Armor/Swap)
   51: { target: 'button', mask: 0x0004 },          // 3 → D-Left (Emotes)
   52: { target: 'button', mask: 0x0008 },          // 4 → D-Right (Streaks)
 };
@@ -243,6 +261,11 @@ const WARZONE_BINDINGS: Record<number, Binding> = {
 const WARZONE_MOUSE_BINDINGS: Record<number, Binding> = {
   0: { target: 'rightTrigger', axisValue: 1.0 },  // LMB → RT (Fire)
   1: { target: 'leftTrigger',  axisValue: 1.0 },  // RMB → LT (ADS)
+  2: { target: 'button', mask: 0x0080 },          // MMB -> RS (Melee)
+  3: { target: 'button', mask: 0x0100 },          // Mouse4 -> LB (Tactical)
+  4: { target: 'button', mask: 0x0001 },          // Mouse5 -> D-Up (Ping)
+  5: { target: 'button', mask: 0x8000 },          // Wheel Up -> Y (Swap)
+  6: { target: 'button', mask: 0x8000 },          // Wheel Down -> Y (Swap)
 };
 
 const MsgType = {
@@ -256,10 +279,12 @@ const buildProfilePayload = (
   name: string,
   bindings: Record<number, Binding>,
   mouseBindings: Record<number, Binding>,
-  cfg: MouseConfig
+  cfg: MouseConfig,
+  controllerType: ControllerType
 ) => ({
   profileName: name,
   version: '2.0',
+  controllerType,
   keyBindings: bindings,
   mouseBindings,
   mouse: { ...cfg },
@@ -278,7 +303,7 @@ interface MappingStore {
   bindings:      Record<number, Binding>;
   mouseBindings: Record<number, Binding>;
   mouseConfig:   MouseConfig;
-  controllerType: 'xbox360' | 'dualsense' | 'vader4pro';
+  controllerType: ControllerType;
   activeProfile: string;
   savedProfiles: string[];
   captureEnabled:  boolean;
@@ -294,7 +319,7 @@ interface MappingStore {
   unbindMouseByMask:      (mask: number) => void;
   unbindMouseByTarget:    (target: string) => void;
   setMouseConfig:         (cfg: MouseConfig) => void;
-  setControllerType:      (type: 'xbox360' | 'dualsense' | 'vader4pro') => void;
+  setControllerType:      (type: ControllerType) => void;
   setCaptureEnabled:      (enabled: boolean) => void;
   setCaptureEnabledFromCore: (enabled: boolean) => void;
   setCoreConnected:       (connected: boolean) => void;
@@ -338,7 +363,7 @@ function buildMacroPayload(macro: MacroDef): Record<string, unknown> | null {
     'sens-boost': {
       sensBoostEnabled: macro.enabled,
       sensBoostKey: cfg.key ?? 0x58,
-      sensBoostMultiplier: cfg.multiplier ?? 2.0,
+      sensBoostMultiplier: cfg.multiplier ?? 8.0,
     },
     'drift-aim': {
       driftEnabled: macro.enabled,
@@ -471,6 +496,7 @@ export const useBindingStore = create<MappingStore>()(
 
       setControllerType: (type) => {
         set({ controllerType: type });
+        get().syncToCore();
       },
 
       setCaptureEnabled: (enabled) => {
@@ -497,7 +523,7 @@ export const useBindingStore = create<MappingStore>()(
         if (!trimmed) return;
         const { bindings, mouseBindings, mouseConfig } = get();
         localStorage.setItem(`profile_${trimmed}`, JSON.stringify(
-          buildProfilePayload(trimmed, bindings, mouseBindings, mouseConfig)
+          buildProfilePayload(trimmed, bindings, mouseBindings, mouseConfig, get().controllerType)
         ));
         set({ activeProfile: trimmed, savedProfiles: listSavedProfileNames() });
       },
@@ -511,6 +537,7 @@ export const useBindingStore = create<MappingStore>()(
         const resolvedBindings     = data.bindings      ?? data.keyBindings   ?? {};
         const resolvedMouseBindings = data.mouseBindings ?? {};
         const rawMouse             = { ...(data.mouse ?? data.mouseConfig ?? {}), ...(data.mouseCamera ?? {}) };
+        const resolvedControllerType = (data.controllerType ?? 'vader4pro') as ControllerType;
 
         // Migrate legacy fields
         const resolvedMouse: MouseConfig = {
@@ -526,9 +553,9 @@ export const useBindingStore = create<MappingStore>()(
             : {}),
         };
 
-        set({ bindings: resolvedBindings, mouseBindings: resolvedMouseBindings, mouseConfig: resolvedMouse, activeProfile: trimmed });
+        set({ bindings: resolvedBindings, mouseBindings: resolvedMouseBindings, mouseConfig: resolvedMouse, controllerType: resolvedControllerType, activeProfile: trimmed });
         window.electronAPI?.coreSend(MsgType.LoadProfile,
-          buildProfilePayload(trimmed, resolvedBindings, resolvedMouseBindings, resolvedMouse));
+          buildProfilePayload(trimmed, resolvedBindings, resolvedMouseBindings, resolvedMouse, resolvedControllerType));
         get().syncToCore();
       },
 
@@ -539,7 +566,7 @@ export const useBindingStore = create<MappingStore>()(
       syncToCore: () => {
         const { bindings, mouseBindings, mouseConfig, activeProfile } = get();
         window.electronAPI?.coreSend(MsgType.SetActiveProfile,
-          buildProfilePayload(activeProfile, bindings, mouseBindings, mouseConfig));
+          buildProfilePayload(activeProfile, bindings, mouseBindings, mouseConfig, get().controllerType));
         syncAllMacrosToCore(get);
       },
 
@@ -583,6 +610,10 @@ export const useBindingStore = create<MappingStore>()(
           if (state.mouseConfig.smoothingFactor == null) state.mouseConfig.smoothingFactor = 0;
           if (state.mouseConfig.maxStepPerFrame == null) state.mouseConfig.maxStepPerFrame = 0;
           if (state.mouseConfig.antiDeadzone == null) state.mouseConfig.antiDeadzone = 0;
+          if (state.mouseConfig.velocityMode == null) state.mouseConfig.velocityMode = true;
+          if (state.mouseConfig.velocityScale == null) state.mouseConfig.velocityScale = 0.025;
+          if (state.mouseConfig.responseTime == null) state.mouseConfig.responseTime = 0.004;
+          if (state.mouseConfig.stopTime == null) state.mouseConfig.stopTime = 0.002;
           if (state.mouseConfig.nativeMouseCameraEnabled == null) state.mouseConfig.nativeMouseCameraEnabled = false;
           state.mouseConfig.mouseCameraSensitivityX = 1.0;
           state.mouseConfig.mouseCameraSensitivityY = 1.0;
@@ -594,6 +625,7 @@ export const useBindingStore = create<MappingStore>()(
           if (!Array.isArray(state.macros) || state.macros.length === 0) {
             state.macros = DEFAULT_MACROS.map(m => ({ ...m }));
           } else {
+            state.macros = state.macros.filter((m: MacroDef) => m.id !== 'scroll-swap');
             // Merge new defaults that may have been added
             for (const def of DEFAULT_MACROS) {
               if (!state.macros.find((m: MacroDef) => m.id === def.id)) {
@@ -601,8 +633,7 @@ export const useBindingStore = create<MappingStore>()(
               }
             }
           }
-          // Migrate controller type to Vader 4 Pro
-          if ((state.controllerType as string) === 'xbox360' || (state.controllerType as string) === 'dualsense') {
+          if (state.controllerType == null) {
             state.controllerType = 'vader4pro';
           }
         }

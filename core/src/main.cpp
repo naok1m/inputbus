@@ -48,7 +48,7 @@ static std::atomic<int>   g_rapidFireDurationMs{30};   // press duration per cyc
 // Sensitivity boost (PQD / parachute) — hold key to multiply sensitivity
 static std::atomic<bool>  g_sensBoostEnabled{false};
 static std::atomic<int>   g_sensBoostKey{0x58};        // default: X key (0x58)
-static std::atomic<float> g_sensBoostMultiplier{2.0f};
+static std::atomic<float> g_sensBoostMultiplier{8.0f};
 static std::atomic<bool>  g_sensBoostActive{false};    // currently held
 
 // Drift aim macro — oscillates left stick to manipulate aim assist
@@ -60,6 +60,9 @@ static std::atomic<int>   g_driftIntervalMs{33};       // oscillation period (~3
 static std::atomic<bool>  g_yyEnabled{false};
 static std::atomic<int>   g_yyKey{0x46};               // default: F key
 static std::atomic<int>   g_yyDelayMs{80};             // delay between presses
+
+static Binding            g_wheelPulseBinding{};
+static bool               g_wheelPulseRequested = false;
 
 // Tab scoreboard — hold Tab to press Back (scoreboard)
 static std::atomic<bool>  g_tabScoreEnabled{false};
@@ -92,11 +95,20 @@ static std::atomic<int>   g_autoLootDurationMs{30};
 static std::atomic<int>   g_hotkeyVk{0x77};            // VK_F8
 static std::atomic<int>   g_hotkeyMods{0x01};          // 0x01=Shift, 0x02=Ctrl, 0x04=Alt
 
+static VirtualControllerType ParseControllerType(const nlohmann::json& j) {
+    const std::string type = j.value("controllerType", "xbox360");
+    if (type == "steamInput" || type == "dualsense" || type == "dualshock4" || type == "ds4") {
+        return VirtualControllerType::DualShock4;
+    }
+    return VirtualControllerType::Xbox360;
+}
+
 // ============================================================================
 // MOUSE BLOCKING — hides cursor & blocks legacy mouse from reaching games
 // ============================================================================
 
 static HHOOK g_mouseHook = nullptr;
+static HHOOK g_keyboardHook = nullptr;
 
 // Low-level mouse hook: blocks ALL legacy mouse messages (WM_MOUSEMOVE,
 // WM_LBUTTONDOWN, etc.) when capture is active. Raw Input (WM_INPUT) is
@@ -112,8 +124,24 @@ static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lPara
     return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
 }
 
+static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0 && g_captureEnabled.load(std::memory_order_relaxed)) {
+        return 1;
+    }
+    return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
+}
+
 // Enables full mouse blocking: hook + cursor clip + hide
 static void EnableMouseBlock() {
+    if (!g_keyboardHook) {
+        g_keyboardHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc,
+                                           GetModuleHandleW(nullptr), 0);
+        if (g_keyboardHook)
+            std::cout << "[Keyboard] Hook installed\n";
+        else
+            std::cerr << "[Keyboard] Failed to install hook: " << GetLastError() << "\n";
+    }
+
     // Native mouse mode must be real mouse passthrough: no cursor clip, no low-level
     // hook, no synthetic movement. The game receives physical mouse input directly.
     if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
@@ -155,6 +183,11 @@ static void DisableMouseBlock() {
         g_mouseHook = nullptr;
         std::cout << "[Cursor] Mouse hook removed\n";
     }
+    if (g_keyboardHook) {
+        UnhookWindowsHookEx(g_keyboardHook);
+        g_keyboardHook = nullptr;
+        std::cout << "[Keyboard] Hook removed\n";
+    }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
 }
@@ -164,6 +197,10 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD) {
     if (g_mouseHook) {
         UnhookWindowsHookEx(g_mouseHook);
         g_mouseHook = nullptr;
+    }
+    if (g_keyboardHook) {
+        UnhookWindowsHookEx(g_keyboardHook);
+        g_keyboardHook = nullptr;
     }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
@@ -235,11 +272,13 @@ int main() {
                             file = (std::filesystem::path("profiles") / j["profileFile"].get<std::string>()).string();
 
                         if (!file.empty() && profiles.Load(file, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            vigem.SetControllerType(ParseControllerType(j));
                             g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                             if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
                         }
                         if (profiles.LoadFromJson(payload, g_mapper, g_mouseProc, &g_mouseCameraConfig)) {
+                            vigem.SetControllerType(ParseControllerType(j));
                             g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                             if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                             return R"({"ok":true})";
@@ -254,6 +293,10 @@ int main() {
                               << " hasW=" << g_mapper.HasKeyBinding(87)
                               << " hasA=" << g_mapper.HasKeyBinding(65) << "\n";
                     if (ok) {
+                        try {
+                            auto j = json::parse(payload);
+                            vigem.SetControllerType(ParseControllerType(j));
+                        } catch (...) {}
                         g_nativeMouseCameraEnabled.store(g_mouseCameraConfig.nativeMouseCameraEnabled, std::memory_order_relaxed);
                         if (g_captureEnabled.load(std::memory_order_relaxed)) EnableMouseBlock();
                     }
@@ -276,6 +319,10 @@ int main() {
                         }
                         if (j.contains("exponent"))        cfg.exponent        = j["exponent"];
                         if (j.contains("maxSpeed"))        cfg.maxSpeed        = j["maxSpeed"];
+                        if (j.contains("velocityMode"))    cfg.velocityMode    = j["velocityMode"];
+                        if (j.contains("velocityScale"))   cfg.velocityScale   = j["velocityScale"];
+                        if (j.contains("responseTime"))    cfg.responseTime    = j["responseTime"];
+                        if (j.contains("stopTime"))        cfg.stopTime        = j["stopTime"];
                         if (j.contains("deadzone"))        cfg.deadzone        = j["deadzone"];
                         if (j.contains("smoothingFactor")) cfg.smoothingFactor = j["smoothingFactor"];
                         if (j.contains("maxStepPerFrame")) cfg.maxStepPerFrame = j["maxStepPerFrame"];
@@ -494,6 +541,10 @@ int main() {
             float yyTimer = 0.0f;
             bool  yyKeyWasDown = false;
 
+            Binding wheelPulseBinding{};
+            bool  wheelPulseHolding = false;
+            float wheelPulseTimer = 0.0f;
+
             // No-recoil macro state
             bool  nrLmbWasDown = false;
             bool  nrToggled = false;
@@ -515,6 +566,7 @@ int main() {
             float alTimer = 0.0f;
             float alHoldTimer = 0.0f;
             bool  alHolding = false;
+            bool  lastSensBoostActive = false;
 
             while (running.load()) {
                 const auto now  = Clock::now();
@@ -527,7 +579,18 @@ int main() {
                     if (g_captureEnabled.load())
                         g_mapper.RefreshLeftStickFromKeyboard(g_gamepadState);
 
+                    const bool sensBoostEnabled = g_sensBoostEnabled.load() && g_captureEnabled.load();
+                    const bool sensBoostActive = sensBoostEnabled && g_sensBoostActive.load(std::memory_order_relaxed);
+                    const float sensBoostMultiplier = std::clamp(g_sensBoostMultiplier.load(), 1.0f, 25.0f);
+                    g_mouseProc.SetSensitivityMultiplier(sensBoostActive ? sensBoostMultiplier : 1.0f);
+
+                    if (lastSensBoostActive && !sensBoostActive) {
+                        g_mouseProc.Reset();
+                    }
+                    lastSensBoostActive = sensBoostActive;
+
                     const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled;
+
                     if (nativeMouseCameraEnabled) {
                         g_mouseProc.Reset();
                         g_gamepadState.thumbRX = 0;
@@ -595,14 +658,6 @@ int main() {
                         rfHolding = false;
                     }
 
-                    // ── Sensitivity boost (PQD) ──
-                    if (g_sensBoostEnabled.load() && g_captureEnabled.load()) {
-                        bool keyDown = g_sensBoostActive.load(std::memory_order_relaxed);
-                        g_mouseProc.SetSensitivityMultiplier(keyDown ? g_sensBoostMultiplier.load() : 1.0f);
-                    } else {
-                        g_mouseProc.SetSensitivityMultiplier(1.0f);
-                    }
-
                     // ── Drift aim macro — oscillate left stick X only while ADS (LT) ──
                     if (g_driftEnabled.load() && g_captureEnabled.load() && g_gamepadState.leftTrigger > 0) {
                         const float driftInterval = g_driftIntervalMs.load() / 1000.0f;
@@ -666,6 +721,36 @@ int main() {
                     }
 
                     // ── Tab scoreboard — hold Tab → hold Back button ──
+                    // Mouse wheel bindings are pulses because wheel has no key-up event.
+                    if (g_captureEnabled.load()) {
+                        if (g_wheelPulseRequested) {
+                            wheelPulseBinding = g_wheelPulseBinding;
+                            g_wheelPulseRequested = false;
+                            wheelPulseHolding = true;
+                            wheelPulseTimer = 0.0f;
+                        }
+
+                        if (wheelPulseHolding) {
+                            if (wheelPulseBinding.target == TargetType::Button) {
+                                g_gamepadState.buttons |= wheelPulseBinding.buttonMask;
+                            } else if (wheelPulseBinding.target == TargetType::LeftTrigger) {
+                                const auto value = static_cast<uint8_t>(std::clamp(wheelPulseBinding.axisValue, 0.0f, 1.0f) * 255.0f);
+                                g_gamepadState.leftTrigger = std::max(g_gamepadState.leftTrigger, value);
+                            } else if (wheelPulseBinding.target == TargetType::RightTrigger) {
+                                const auto value = static_cast<uint8_t>(std::clamp(wheelPulseBinding.axisValue, 0.0f, 1.0f) * 255.0f);
+                                g_gamepadState.rightTrigger = std::max(g_gamepadState.rightTrigger, value);
+                            }
+
+                            wheelPulseTimer += dt;
+                            if (wheelPulseTimer >= 0.045f) {
+                                wheelPulseHolding = false;
+                            }
+                        }
+                    } else {
+                        wheelPulseHolding = false;
+                        g_wheelPulseRequested = false;
+                    }
+
                     if (g_tabScoreEnabled.load() && g_captureEnabled.load()) {
                         if (GetAsyncKeyState(VK_TAB) & 0x8000) {
                             g_gamepadState.buttons |= 0x0020; // Back/Select
@@ -938,6 +1023,16 @@ int main() {
                 case RawInputType::MouseButton:
                     return g_mapper.OnMouseButton(evt.mouseBtn.button, evt.mouseBtn.pressed, g_gamepadState);
 
+                case RawInputType::MouseWheel:
+                    if (evt.wheel.delta != 0) {
+                        Binding wheelBinding{};
+                        if (g_mapper.GetMouseWheelBinding(evt.wheel.delta, wheelBinding)) {
+                            g_wheelPulseBinding = wheelBinding;
+                            g_wheelPulseRequested = true;
+                        }
+                    }
+                    return false;
+
                 default: return false;
             }
         });
@@ -961,6 +1056,10 @@ int main() {
         if (g_mouseHook) {
             UnhookWindowsHookEx(g_mouseHook);
             g_mouseHook = nullptr;
+        }
+        if (g_keyboardHook) {
+            UnhookWindowsHookEx(g_keyboardHook);
+            g_keyboardHook = nullptr;
         }
         ClipCursor(nullptr);
         while (ShowCursor(TRUE) < 0) {}

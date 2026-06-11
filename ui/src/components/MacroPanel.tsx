@@ -267,14 +267,14 @@ function MacroConfigPanel({ macro, onClose }: { macro: MacroDef; onClose: () => 
               <div className="slider-row">
                 <span className="slider-label">Multiplier</span>
                 <input
-                  type="range" min={1.2} max={5.0} step={0.1}
-                  value={Number(config.multiplier ?? 2.0)}
+                  type="range" min={1.2} max={25.0} step={0.1}
+                  value={Number(config.multiplier ?? 8.0)}
                   onChange={e => updateMacroConfig(macro.id, { multiplier: Number(e.target.value) })}
                 />
-                <span className="slider-value">{Number(config.multiplier ?? 2.0).toFixed(1)}x</span>
+                <span className="slider-value">{Number(config.multiplier ?? 8.0).toFixed(1)}x</span>
               </div>
               <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                Hold the key to boost mouse sensitivity while parachuting.
+                Hold the key while parachuting. Releasing it resets the boost immediately so normal aim returns cleanly.
               </p>
             </div>
           )}

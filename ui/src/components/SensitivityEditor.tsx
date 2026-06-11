@@ -20,6 +20,14 @@ const BASIC_FIELDS: Field[] = [
 
 const ADVANCED_SECTIONS: { title: string; fields: Field[] }[] = [
   {
+    title: 'Natural Mouse Feel',
+    fields: [
+      { key: 'velocityScale', label: 'Velocity Scale', min: 0.001, max: 0.05, step: 0.001 },
+      { key: 'responseTime',  label: 'Response Time',  min: 0,     max: 0.03, step: 0.001, unit: 's' },
+      { key: 'stopTime',      label: 'Stop Time',      min: 0,     max: 0.03, step: 0.001, unit: 's' },
+    ],
+  },
+  {
     title: 'Mouse DPI',
     fields: [
       { key: 'mouseDPI',        label: 'Your Mouse DPI',   min: 100, max: 6400,  step: 100  },
@@ -190,6 +198,23 @@ function SliderField({ field, value, onChange }: { field: Field; value: number; 
   );
 }
 
+function ToggleField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="slider-row">
+      <span className="slider-label">{label}</span>
+      <button
+        className={`toggle ${checked ? 'toggle--on' : ''}`}
+        onClick={() => onChange(!checked)}
+        aria-pressed={checked}
+        type="button"
+      >
+        <span className="toggle-thumb" />
+      </button>
+      <span className="slider-value">{checked ? 'ON' : 'LEGACY'}</span>
+    </div>
+  );
+}
+
 // ── Main Editor ──
 export function SensitivityEditor() {
   const { mouseConfig, setMouseConfig } = useBindingStore();
@@ -246,9 +271,16 @@ export function SensitivityEditor() {
                 <CollapsibleSection
                   key={title}
                   title={title}
-                  defaultOpen={title === 'Mouse DPI' || title === 'Response Curve'}
+                  defaultOpen={title === 'Natural Mouse Feel' || title === 'Mouse DPI' || title === 'Response Curve'}
                   badge={title === 'Return to Center' && mouseConfig.decayRate === 0 ? 'DISABLED' : undefined}
                 >
+                  {title === 'Natural Mouse Feel' && (
+                    <ToggleField
+                      label="Velocity Mode"
+                      checked={mouseConfig.velocityMode}
+                      onChange={velocityMode => setMouseConfig({ ...mouseConfig, velocityMode })}
+                    />
+                  )}
                   {fields.map(field => (
                     <SliderField
                       key={field.key}
