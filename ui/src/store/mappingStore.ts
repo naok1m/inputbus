@@ -97,9 +97,9 @@ const DEFAULT_MACROS: MacroDef[] = [
     name: 'PQD Sens Boost',
     icon: '\u{1F4A8}',
     category: 'movement',
-    description: 'Hold a key to remove low parachute camera sensitivity',
+    description: 'Hold a key to multiply parachute camera sensitivity',
     enabled: false,
-    config: { key: 0x58, multiplier: 4.0, nativeMouse: true },
+    config: { key: 0x58, multiplier: 8.0 },
   },
   {
     id: 'drift-aim',
@@ -236,20 +236,23 @@ const WARZONE_BINDINGS: Record<number, Binding> = {
   68: { target: 'leftStickX', axisValue:  1.0 },  // D
   // Face Buttons
   32: { target: 'button', mask: 0x1000 },          // Space → A (Jump)
-  67: { target: 'button', mask: 0x2000 },          // C → B (Slide/Prone)
-  82: { target: 'button', mask: 0x4000 },          // R → X (Reload)
-  49: { target: 'button', mask: 0x8000 },          // 1 → Y (Weapon Switch)
+  67: { target: 'button', mask: 0x2000 },          // C -> B (Slide/Prone)
+  17: { target: 'button', mask: 0x2000 },          // Ctrl -> B (Prone)
+  82: { target: 'button', mask: 0x4000 },          // R -> X (Reload)
+  70: { target: 'button', mask: 0x4000 },          // F -> X (Interact)
+  69: { target: 'button', mask: 0x4000 },          // E -> X (Interact fallback)
+  49: { target: 'button', mask: 0x8000 },          // 1 -> Y (Weapon Switch)
   // Bumpers
   81: { target: 'button', mask: 0x0100 },          // Q → LB (Tactical)
   71: { target: 'button', mask: 0x0200 },          // G → RB (Lethal)
   // System
   27: { target: 'button', mask: 0x0010 },          // Esc → Start (Menu)
-  90: { target: 'button', mask: 0x0020 },          // Z → Back (Ping)
+   9: { target: 'button', mask: 0x0020 },          // Tab -> Back/View (Tac Map)
   16: { target: 'button', mask: 0x0040 },          // Shift → LS (Sprint)
   86: { target: 'button', mask: 0x0080 },          // V → RS (Melee)
   // D-Pad
-   9: { target: 'button', mask: 0x0001 },          // Tab → D-Up (Map)
-  50: { target: 'button', mask: 0x0002 },          // 2 → D-Down (Inventory)
+  90: { target: 'button', mask: 0x0001 },          // Z -> D-Up (Ping)
+  50: { target: 'button', mask: 0x8000 },          // 2 -> Y (Armor/Swap)
   51: { target: 'button', mask: 0x0004 },          // 3 → D-Left (Emotes)
   52: { target: 'button', mask: 0x0008 },          // 4 → D-Right (Streaks)
 };
@@ -258,6 +261,9 @@ const WARZONE_BINDINGS: Record<number, Binding> = {
 const WARZONE_MOUSE_BINDINGS: Record<number, Binding> = {
   0: { target: 'rightTrigger', axisValue: 1.0 },  // LMB → RT (Fire)
   1: { target: 'leftTrigger',  axisValue: 1.0 },  // RMB → LT (ADS)
+  2: { target: 'button', mask: 0x0080 },          // MMB -> RS (Melee)
+  3: { target: 'button', mask: 0x0100 },          // Mouse4 -> LB (Tactical)
+  4: { target: 'button', mask: 0x0001 },          // Mouse5 -> D-Up (Ping)
   5: { target: 'button', mask: 0x8000 },          // Wheel Up -> Y (Swap)
   6: { target: 'button', mask: 0x8000 },          // Wheel Down -> Y (Swap)
 };
@@ -357,8 +363,7 @@ function buildMacroPayload(macro: MacroDef): Record<string, unknown> | null {
     'sens-boost': {
       sensBoostEnabled: macro.enabled,
       sensBoostKey: cfg.key ?? 0x58,
-      sensBoostMultiplier: cfg.multiplier ?? 4.0,
-      sensBoostNativeMouse: cfg.nativeMouse ?? true,
+      sensBoostMultiplier: cfg.multiplier ?? 8.0,
     },
     'drift-aim': {
       driftEnabled: macro.enabled,

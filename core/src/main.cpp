@@ -48,8 +48,7 @@ static std::atomic<int>   g_rapidFireDurationMs{30};   // press duration per cyc
 // Sensitivity boost (PQD / parachute) — hold key to multiply sensitivity
 static std::atomic<bool>  g_sensBoostEnabled{false};
 static std::atomic<int>   g_sensBoostKey{0x58};        // default: X key (0x58)
-static std::atomic<float> g_sensBoostMultiplier{4.0f};
-static std::atomic<bool>  g_sensBoostNativeMouse{true};
+static std::atomic<float> g_sensBoostMultiplier{8.0f};
 static std::atomic<bool>  g_sensBoostActive{false};    // currently held
 
 // Drift aim macro — oscillates left stick to manipulate aim assist
@@ -109,6 +108,7 @@ static VirtualControllerType ParseControllerType(const nlohmann::json& j) {
 // ============================================================================
 
 static HHOOK g_mouseHook = nullptr;
+static HHOOK g_keyboardHook = nullptr;
 
 // Low-level mouse hook: blocks ALL legacy mouse messages (WM_MOUSEMOVE,
 // WM_LBUTTONDOWN, etc.) when capture is active. Raw Input (WM_INPUT) is
@@ -124,8 +124,24 @@ static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lPara
     return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
 }
 
+static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0 && g_captureEnabled.load(std::memory_order_relaxed)) {
+        return 1;
+    }
+    return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
+}
+
 // Enables full mouse blocking: hook + cursor clip + hide
 static void EnableMouseBlock() {
+    if (!g_keyboardHook) {
+        g_keyboardHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc,
+                                           GetModuleHandleW(nullptr), 0);
+        if (g_keyboardHook)
+            std::cout << "[Keyboard] Hook installed\n";
+        else
+            std::cerr << "[Keyboard] Failed to install hook: " << GetLastError() << "\n";
+    }
+
     // Native mouse mode must be real mouse passthrough: no cursor clip, no low-level
     // hook, no synthetic movement. The game receives physical mouse input directly.
     if (g_nativeMouseCameraEnabled.load(std::memory_order_relaxed)) {
@@ -167,6 +183,11 @@ static void DisableMouseBlock() {
         g_mouseHook = nullptr;
         std::cout << "[Cursor] Mouse hook removed\n";
     }
+    if (g_keyboardHook) {
+        UnhookWindowsHookEx(g_keyboardHook);
+        g_keyboardHook = nullptr;
+        std::cout << "[Keyboard] Hook removed\n";
+    }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
 }
@@ -176,6 +197,10 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD) {
     if (g_mouseHook) {
         UnhookWindowsHookEx(g_mouseHook);
         g_mouseHook = nullptr;
+    }
+    if (g_keyboardHook) {
+        UnhookWindowsHookEx(g_keyboardHook);
+        g_keyboardHook = nullptr;
     }
     ClipCursor(nullptr);
     while (ShowCursor(TRUE) < 0) {}
@@ -406,8 +431,6 @@ int main() {
                             g_sensBoostKey.store(j["sensBoostKey"].get<int>());
                         if (j.contains("sensBoostMultiplier"))
                             g_sensBoostMultiplier.store(j["sensBoostMultiplier"].get<float>());
-                        if (j.contains("sensBoostNativeMouse"))
-                            g_sensBoostNativeMouse.store(j["sensBoostNativeMouse"].get<bool>());
 
                         // Drift aim
                         if (j.contains("driftEnabled"))
@@ -543,7 +566,7 @@ int main() {
             float alTimer = 0.0f;
             float alHoldTimer = 0.0f;
             bool  alHolding = false;
-            bool  lastEffectiveNativeMouseCameraEnabled = g_nativeMouseCameraEnabled.load(std::memory_order_relaxed);
+            bool  lastSensBoostActive = false;
 
             while (running.load()) {
                 const auto now  = Clock::now();
@@ -558,17 +581,15 @@ int main() {
 
                     const bool sensBoostEnabled = g_sensBoostEnabled.load() && g_captureEnabled.load();
                     const bool sensBoostActive = sensBoostEnabled && g_sensBoostActive.load(std::memory_order_relaxed);
-                    const bool sensBoostNativeMouse = sensBoostActive && g_sensBoostNativeMouse.load();
-                    g_mouseProc.SetSensitivityMultiplier(sensBoostActive ? g_sensBoostMultiplier.load() : 1.0f);
+                    const float sensBoostMultiplier = std::clamp(g_sensBoostMultiplier.load(), 1.0f, 25.0f);
+                    g_mouseProc.SetSensitivityMultiplier(sensBoostActive ? sensBoostMultiplier : 1.0f);
 
-                    const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled || sensBoostNativeMouse;
-                    if (nativeMouseCameraEnabled != lastEffectiveNativeMouseCameraEnabled) {
-                        g_nativeMouseCameraEnabled.store(nativeMouseCameraEnabled, std::memory_order_relaxed);
-                        if (g_captureEnabled.load()) EnableMouseBlock();
-                        lastEffectiveNativeMouseCameraEnabled = nativeMouseCameraEnabled;
-                    } else {
-                        g_nativeMouseCameraEnabled.store(nativeMouseCameraEnabled, std::memory_order_relaxed);
+                    if (lastSensBoostActive && !sensBoostActive) {
+                        g_mouseProc.Reset();
                     }
+                    lastSensBoostActive = sensBoostActive;
+
+                    const bool nativeMouseCameraEnabled = g_mouseCameraConfig.nativeMouseCameraEnabled;
 
                     if (nativeMouseCameraEnabled) {
                         g_mouseProc.Reset();
@@ -1035,6 +1056,10 @@ int main() {
         if (g_mouseHook) {
             UnhookWindowsHookEx(g_mouseHook);
             g_mouseHook = nullptr;
+        }
+        if (g_keyboardHook) {
+            UnhookWindowsHookEx(g_keyboardHook);
+            g_keyboardHook = nullptr;
         }
         ClipCursor(nullptr);
         while (ShowCursor(TRUE) < 0) {}

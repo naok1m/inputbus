@@ -28,110 +28,145 @@
     "keyBindings":  {
                         "87":  {
                                    "target":  "leftStickY",
-                                   "axisValue":  1.0,
-                                   "label":  "W â†’ LS Up"
+                                   "axisValue":  1,
+                                   "label":  "W -\u003e LS Up"
                                },
                         "83":  {
                                    "target":  "leftStickY",
-                                   "axisValue":  -1.0,
-                                   "label":  "S â†’ LS Down"
+                                   "axisValue":  -1,
+                                   "label":  "S -\u003e LS Down"
                                },
                         "65":  {
                                    "target":  "leftStickX",
-                                   "axisValue":  -1.0,
-                                   "label":  "A â†’ LS Left"
+                                   "axisValue":  -1,
+                                   "label":  "A -\u003e LS Left"
                                },
                         "68":  {
                                    "target":  "leftStickX",
-                                   "axisValue":  1.0,
-                                   "label":  "D â†’ LS Right"
+                                   "axisValue":  1,
+                                   "label":  "D -\u003e LS Right"
                                },
                         "32":  {
                                    "target":  "button",
                                    "mask":  4096,
-                                   "label":  "Space â†’ A (Jump)"
+                                   "label":  "Space -\u003e A (Jump/Parachute)"
+                               },
+                        "67":  {
+                                   "target":  "button",
+                                   "mask":  8192,
+                                   "label":  "C -\u003e B (Crouch/Slide/Cut Parachute)"
                                },
                         "17":  {
                                    "target":  "button",
                                    "mask":  8192,
-                                   "label":  "Ctrl â†’ B (Crouch/Slide)"
+                                   "label":  "Ctrl -\u003e B (Prone)"
                                },
-                        "16":  {
+                        "82":  {
                                    "target":  "button",
                                    "mask":  16384,
-                                   "label":  "Shift â†’ X (Sprint/Tac Sprint)"
+                                   "label":  "R -\u003e X (Reload)"
                                },
                         "70":  {
                                    "target":  "button",
+                                   "mask":  16384,
+                                   "label":  "F -\u003e X (Interact)"
+                               },
+                        "69":  {
+                                   "target":  "button",
+                                   "mask":  16384,
+                                   "label":  "E -\u003e X (Interact fallback)"
+                               },
+                        "49":  {
+                                   "target":  "button",
                                    "mask":  32768,
-                                   "label":  "F â†’ Y (Use/Interact)"
+                                   "label":  "1 -\u003e Y (Weapon Switch)"
                                },
-                        "82":  {
-                                   "target":  "rightTrigger",
-                                   "axisValue":  1.0,
-                                   "label":  "R â†’ RT (Reload)"
-                               },
-                        "71":  {
-                                   "target":  "leftTrigger",
-                                   "axisValue":  1.0,
-                                   "label":  "G â†’ LT (Lethal)"
+                        "50":  {
+                                   "target":  "button",
+                                   "mask":  32768,
+                                   "label":  "2 -\u003e Y (Armor/Swap)"
                                },
                         "81":  {
                                    "target":  "button",
                                    "mask":  256,
-                                   "label":  "Q â†’ LB (Tactical)"
+                                   "label":  "Q -\u003e LB (Tactical)"
                                },
-                        "69":  {
+                        "71":  {
                                    "target":  "button",
                                    "mask":  512,
-                                   "label":  "E â†’ RB (Mount/Lean)"
+                                   "label":  "G -\u003e RB (Lethal)"
+                               },
+                        "27":  {
+                                   "target":  "button",
+                                   "mask":  16,
+                                   "label":  "Esc -\u003e Start/Menu"
                                },
                         "9":  {
                                   "target":  "button",
-                                  "mask":  16,
-                                  "label":  "Tab â†’ Back (Scoreboard)"
+                                  "mask":  32,
+                                  "label":  "Tab -\u003e Back/View (Tac Map)"
                               },
-                        "27":  {
+                        "16":  {
                                    "target":  "button",
-                                   "mask":  32,
-                                   "label":  "Esc â†’ Start (Menu)"
+                                   "mask":  64,
+                                   "label":  "Shift -\u003e LS (Sprint)"
+                               },
+                        "86":  {
+                                   "target":  "button",
+                                   "mask":  128,
+                                   "label":  "V -\u003e RS (Melee)"
+                               },
+                        "90":  {
+                                   "target":  "button",
+                                   "mask":  1,
+                                   "label":  "Z -\u003e D-Up (Ping)"
+                               },
+                        "51":  {
+                                   "target":  "button",
+                                   "mask":  4,
+                                   "label":  "3 -\u003e D-Left"
+                               },
+                        "52":  {
+                                   "target":  "button",
+                                   "mask":  8,
+                                   "label":  "4 -\u003e D-Right (Streaks)"
                                }
                     },
     "mouseBindings":  {
                           "0":  {
                                     "target":  "rightTrigger",
-                                    "axisValue":  1.0,
-                                    "label":  "LMB â†’ RT (Fire)"
+                                    "axisValue":  1,
+                                    "label":  "LMB -\u003e RT (Fire)"
                                 },
                           "1":  {
                                     "target":  "leftTrigger",
-                                    "axisValue":  1.0,
-                                    "label":  "RMB â†’ LT (ADS)"
+                                    "axisValue":  1,
+                                    "label":  "RMB -\u003e LT (ADS)"
                                 },
                           "2":  {
                                     "target":  "button",
                                     "mask":  128,
-                                    "label":  "MMB â†’ RS Click (Melee)"
+                                    "label":  "MMB -\u003e RS (Melee)"
                                 },
                           "3":  {
                                     "target":  "button",
-                                    "mask":  64,
-                                    "label":  "Mouse X1 â†’ LS Click (Sprint)"
+                                    "mask":  256,
+                                    "label":  "Mouse4 -\u003e LB (Tactical)"
                                 },
                           "4":  {
                                     "target":  "button",
-                                    "mask":  32768,
-                                    "label":  "Mouse X2 â†’ Y (Use)"
+                                    "mask":  1,
+                                    "label":  "Mouse5 -\u003e D-Up (Ping)"
                                 },
                           "5":  {
                                     "target":  "button",
                                     "mask":  32768,
-                                    "label":  "Wheel Up -> Y"
+                                    "label":  "Wheel Up -\u003e Y (Swap)"
                                 },
                           "6":  {
                                     "target":  "button",
                                     "mask":  32768,
-                                    "label":  "Wheel Down -> Y"
+                                    "label":  "Wheel Down -\u003e Y (Swap)"
                                 }
                       },
     "mouseCamera":  {
